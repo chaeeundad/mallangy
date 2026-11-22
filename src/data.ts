@@ -1,3 +1,4 @@
+import type { Customization } from "./workshop/design";
 export const COLORS = [
   "#ff8caf",
   "#ffb8c6",
@@ -36,8 +37,23 @@ export type Hero = {
   shapeIndex: number;
   slangi: boolean;
   slangiSound: string;
-  stickers: { emoji: string; x: number; y: number; z: number }[];
-  paint: { x: number; y: number; z: number; color: string }[];
+  customization?: Customization;
+  stickers: {
+    emoji: string;
+    x: number;
+    y: number;
+    z: number;
+    scale?: number;
+    rotation?: number;
+  }[];
+  paint: {
+    x: number;
+    y: number;
+    z: number;
+    color: string;
+    radius?: number;
+    strength?: number;
+  }[];
   crunch: { x: number; y: number; z: number; kind: string; hue: number }[];
 };
 export const DEFAULT_HERO: Hero = {

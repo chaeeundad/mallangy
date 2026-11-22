@@ -1,10 +1,18 @@
+import { normalizeDesign } from "./workshop/design";
 import { DEFAULT_HERO, type Hero } from "./data";
+import { STORY_PAGES, STORY_ACTION_IDS } from "./storybook/pages";
 export type RecordScore = { stars: number; berries: number; time: number };
 export type SaveData = {
   version: 2;
   hero: Hero;
   gallery: Hero[];
   records: Record<string, RecordScore>;
+  storybook: {
+    page: number;
+    finished: boolean;
+    discoveries: string[];
+    largeText: boolean;
+  };
   settings: { sound: boolean; reducedMotion: boolean };
 };
 const KEY = "mallang-world-v2";
@@ -21,6 +29,7 @@ export function normalizeHero(value: unknown): Hero {
   >;
   return {
     ...DEFAULT_HERO,
+    customization: normalizeDesign(x.customization),
     name: typeof x.name === "string" ? x.name.slice(0, 16) : DEFAULT_HERO.name,
     colorIndex: index(x.colorIndex, 16, 1),
     baseColorIndex: index(x.baseColorIndex ?? x.colorIndex, 16, 1),
@@ -40,6 +49,20 @@ export function normalizeHero(value: unknown): Hero {
               finite(a.z),
           )
           .slice(0, 60)
+          .map((a: any) => ({
+            emoji: a.emoji,
+            x: a.x,
+            y: a.y,
+            z: a.z,
+            scale:
+              typeof a.scale === "number" && Number.isFinite(a.scale)
+                ? Math.max(0.4, Math.min(3, a.scale))
+                : 1,
+            rotation:
+              typeof a.rotation === "number" && Number.isFinite(a.rotation)
+                ? Math.max(-180, Math.min(180, a.rotation))
+                : 0,
+          }))
       : [],
     paint: Array.isArray(x.paint)
       ? x.paint
@@ -52,6 +75,20 @@ export function normalizeHero(value: unknown): Hero {
               /^#[\da-f]{6}$/i.test(a.color),
           )
           .slice(-1800)
+          .map((a: any) => ({
+            x: a.x,
+            y: a.y,
+            z: a.z,
+            color: a.color,
+            radius:
+              typeof a.radius === "number" && Number.isFinite(a.radius)
+                ? Math.max(0.12, Math.min(0.75, a.radius))
+                : 0.42,
+            strength:
+              typeof a.strength === "number" && Number.isFinite(a.strength)
+                ? Math.max(0.15, Math.min(1, a.strength))
+                : 0.88,
+          }))
       : [],
     crunch: Array.isArray(x.crunch)
       ? x.crunch
@@ -97,6 +134,21 @@ export function normalizeSave(input: unknown): SaveData {
       ? x.gallery.slice(0, 20).map(normalizeHero)
       : [],
     records,
+    storybook: {
+      page: index(x.storybook?.page, STORY_PAGES.length),
+      finished: x.storybook?.finished === true,
+      largeText: x.storybook?.largeText === true,
+      discoveries: Array.isArray(x.storybook?.discoveries)
+        ? [
+            ...new Set<string>(
+              x.storybook.discoveries.filter(
+                (id: unknown) =>
+                  typeof id === "string" && STORY_ACTION_IDS.includes(id),
+              ),
+            ),
+          ]
+        : [],
+    },
     settings: {
       sound: x.settings?.sound !== false,
       reducedMotion: x.settings?.reducedMotion === true,
@@ -125,6 +177,7 @@ export function loadSave(): SaveData {
       .slice(0, 20)
       .map(normalizeHero),
     records: {},
+    storybook: { page: 0, finished: false, discoveries: [], largeText: false },
     settings: {
       sound: true,
       reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,

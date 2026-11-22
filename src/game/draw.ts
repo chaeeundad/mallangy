@@ -41,7 +41,8 @@ export function hero(
   c.save();
   c.translate(x, y);
   c.scale((size / 60) * facing, size / 60);
-  const color = COLORS[h.baseColorIndex] || COLORS[1];
+  const custom = h.customization;
+  const color = custom?.bodyColor || COLORS[h.baseColorIndex] || COLORS[1];
   c.save();
   c.translate(0, 27);
   c.scale(1, 0.2);
@@ -100,12 +101,33 @@ export function hero(
   c.beginPath();
   c.ellipse(0, 0, 26, 25, 0, 0, Math.PI * 2);
   c.clip();
+  if (custom && custom.pattern !== "plain") {
+    c.fillStyle = custom.patternColor;
+    c.globalAlpha = 0.55;
+    if (custom.pattern === "stripes")
+      for (let y = -30; y < 30; y += 9) c.fillRect(-30, y, 60, 3);
+    if (custom.pattern === "dots")
+      for (let y = -30; y < 30; y += 12)
+        for (let x = -26; x < 30; x += 12) {
+          c.beginPath();
+          c.arc(x, y, 2.3, 0, Math.PI * 2);
+          c.fill();
+        }
+    if (custom.pattern === "gradient") {
+      const gradient = c.createLinearGradient(0, 25, 0, -25);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, custom.patternColor);
+      c.globalAlpha = 0.8;
+      c.fillStyle = gradient;
+      c.fillRect(-30, -30, 60, 60);
+    }
+  }
   for (const dab of h.paint.filter((_, i) => i % 3 === 0)) {
     if (dab.z < 0) continue;
     c.fillStyle = dab.color;
     c.globalAlpha = 0.26;
     c.beginPath();
-    c.arc(dab.x * 18, -dab.y * 18, 5, 0, Math.PI * 2);
+    c.arc(dab.x * 18, -dab.y * 18, (dab.radius ?? 0.42) * 12, 0, Math.PI * 2);
     c.fill();
   }
   c.restore();
@@ -119,31 +141,44 @@ export function hero(
     c.ellipse(4, -27, 10, 4, -0.5, 0, Math.PI * 2);
     c.fill();
   }
-  c.fillStyle = "#523e4e";
+  c.save();
+  c.translate((custom?.faceX ?? 0) * 18, -(custom?.faceY ?? 0) * 18);
+  c.scale(custom?.faceScale ?? 1, custom?.faceScale ?? 1);
+  c.fillStyle = custom?.eyeColor ?? "#523e4e";
   for (const d of [-1, 1]) {
     if (h.faceIndex === 2) {
-      c.strokeStyle = "#523e4e";
+      c.strokeStyle = custom?.eyeColor ?? "#523e4e";
       c.lineWidth = 2;
       c.beginPath();
-      c.arc(d * 9, -2, 3, 0, Math.PI);
+      c.arc(d * 9 * (custom?.eyeSpacing ?? 1), -2, 3, 0, Math.PI);
       c.stroke();
     } else {
       c.beginPath();
-      c.ellipse(d * 9, -2, 2.4, 3.4, 0, 0, Math.PI * 2);
+      c.ellipse(
+        d * 9 * (custom?.eyeSpacing ?? 1),
+        -2,
+        2.4,
+        3.4,
+        0,
+        0,
+        Math.PI * 2,
+      );
       c.fill();
       c.fillStyle = "#fff";
       c.beginPath();
-      c.arc(d * 9 - 0.6, -3, 1, 0, Math.PI * 2);
+      c.arc(d * 9 * (custom?.eyeSpacing ?? 1) - 0.6, -3, 1, 0, Math.PI * 2);
       c.fill();
-      c.fillStyle = "#523e4e";
+      c.fillStyle = custom?.eyeColor ?? "#523e4e";
     }
   }
-  c.fillStyle = "#ec86a777";
+  c.globalAlpha = custom?.cheekOpacity ?? 0.52;
+  c.fillStyle = "#ec86a7";
   for (const d of [-1, 1]) {
     c.beginPath();
     c.ellipse(d * 17, 6, 5, 2.5, 0, 0, Math.PI * 2);
     c.fill();
   }
+  c.globalAlpha = 1;
   c.strokeStyle = "#77505a";
   c.lineWidth = 2;
   c.lineCap = "round";
@@ -156,10 +191,18 @@ export function hero(
     c.ellipse(0, 7, 8, 4, 0, 0, Math.PI * 2);
     c.fill();
   }
+  c.restore();
   c.font = "15px sans-serif";
   c.textAlign = "center";
-  for (const s of h.stickers.slice(0, 12)) {
-    if (s.z >= 0) c.fillText(s.emoji, s.x * 19, -s.y * 19 + 5);
+  for (const s of h.stickers.slice(0, 60)) {
+    if (s.z >= 0) {
+      c.save();
+      c.translate(s.x * 19, -s.y * 19 + 5);
+      c.rotate((-(s.rotation ?? 0) * Math.PI) / 180);
+      c.scale(s.scale ?? 1, s.scale ?? 1);
+      c.fillText(s.emoji, 0, 0);
+      c.restore();
+    }
   }
   c.restore();
 }
