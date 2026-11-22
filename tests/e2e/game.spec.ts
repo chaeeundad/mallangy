@@ -37,7 +37,7 @@ test("workshop creates, colors, undoes, persists and collects a friend", async (
     .click();
   await expect(page.locator("canvas.workshop-canvas")).toBeVisible();
   await page.getByRole("button", { name: "🐰 토끼", exact: true }).click();
-  await studioTab(page, "꾸미기");
+  await studioTab(page, "몸");
   await page.getByRole("button", { name: "민트 색", exact: true }).click();
   await studioTab(page, "저장");
   await page.locator("#name").fill("초록토끼");
@@ -49,7 +49,7 @@ test("workshop creates, colors, undoes, persists and collects a friend", async (
     .click();
   await studioTab(page, "저장");
   await expect(page.locator("#name")).toHaveValue("초록토끼");
-  await studioTab(page, "모양");
+  await studioTab(page, "몸");
   await expect(page.locator('[data-i="4"].shape')).toHaveClass(/selected/);
   await page.getByRole("button", { name: "🐻 곰돌이", exact: true }).click();
   await page.getByRole("button", { name: "↶ 되돌리기" }).click();

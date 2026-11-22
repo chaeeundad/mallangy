@@ -1,6 +1,7 @@
 import "./fonts.css";
 import "./style.css";
 import "./mobile.css";
+import { mountStorybook } from "./storybook/reader";
 import {
   createIcons,
   House,
@@ -118,14 +119,15 @@ function nextLevel() {
 const mark = `<svg viewBox="0 0 56 56" aria-hidden="true"><path d="M7 34C4 7 52 7 49 34Q51 48 28 45Q5 48 7 34" fill="#ebacbd"/><circle cx="20" cy="28" r="2.2" fill="#554653"/><circle cx="36" cy="28" r="2.2" fill="#554653"/><path d="M24 34Q28 39 32 34" stroke="#554653" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
 el("#app").innerHTML = `
 <div class="app-shell">
-<header class="app-header"><button class="brand" data-screen="home" aria-label="말랑말랑 친구들 홈">${mark}<span>말랑말랑 친구들<small>작은 친구와 커다란 여행</small></span></button><nav class="main-nav" aria-label="주 메뉴"><button data-screen="home">${icon("house")}<span>우리의 집</span></button><button data-screen="map">${icon("map")}<span>모험 지도</span></button><button data-screen="workshop">${icon("palette")}<span>말랑이 작업실</span></button><button data-screen="collection">${icon("heart")}<span>친구 수첩</span></button></nav><div class="header-tools"><span class="star-wallet">${icon("star")} <b id="total-stars">${totals()}</b></span><button class="icon-button" id="settings" aria-label="설정">${icon("settings")}</button></div></header>
+<header class="app-header"><button class="brand" data-screen="home" aria-label="말랑말랑 친구들 홈">${mark}<span>말랑말랑 친구들<small>작은 친구와 커다란 여행</small></span></button><nav class="main-nav" aria-label="주 메뉴"><button data-screen="home">${icon("house")}<span>우리의 집</span></button><button data-screen="map">${icon("map")}<span>모험 지도</span></button><button data-screen="workshop">${icon("palette")}<span>말랑이 작업실</span></button><button data-screen="storybook">${icon("book-open")}<span>말랑이 이야기</span></button><button data-screen="collection">${icon("heart")}<span>친구 수첩</span></button></nav><div class="header-tools"><span class="star-wallet">${icon("star")} <b id="total-stars">${totals()}</b></span><button class="icon-button" id="settings" aria-label="설정">${icon("settings")}</button></div></header>
 <main class="app-main">
-<section id="home-view" class="view home-view"><div class="home-topline"><span class="eyebrow"><span class="live-dot"></span> 나만의 작은 모험이 시작되는 곳</span><span class="season">THE RAINBOW JOURNEY &nbsp; / &nbsp; 01</span></div><div class="home-hero"><div class="hero-copy"><span class="chapter-label">말랑말랑 친구들 : 무지개를 찾아서</span><h1>조그만 친구와,<br>커다란 <span>모험.</span><svg viewBox="0 0 235 18" aria-hidden="true"><path d="M3 12Q115-7 230 11" fill="none" stroke="#e4ab9e" stroke-width="5" stroke-linecap="round"/></svg></h1><p>내 손으로 만든 말랑이와 함께<br>흩어진 무지개 조각을 찾아 떠나요.<br>조금 느려도 괜찮은, 우리만의 여행.</p><div class="hero-actions"><button class="button primary" id="continue-adventure">모험 떠나기 ${icon("arrow-up-right")}</button><button class="button soft" data-screen="workshop">내 친구 만들기 ${icon("palette")}</button></div><div class="home-save-note">${icon("check")} 이 기기에 여행이 자동으로 기록돼요</div></div><div class="hero-art"><div class="art-tag">A LITTLE WORLD OF YOUR OWN</div><canvas id="home-canvas" aria-label="햇살 초원에 모여 있는 말랑이 친구들"></canvas><div class="art-speech">오늘은 어떤 모험을 할까?</div><div class="art-postcard"><span>FROM. 말랑이 마을</span><b>너와 함께라서 반짝이는 날</b><svg viewBox="0 0 45 45"><path d="M5 31Q22 0 40 31M11 31Q22 10 34 31M17 31Q22 20 28 31" stroke="#b39acb" stroke-width="4" fill="none" stroke-linecap="round"/></svg></div><span class="art-coordinate">35° MALLANG · 127° FRIENDSHIP</span></div></div><div class="journey-intro"><div><span class="eyebrow">YOUR NEXT CHAPTER</span><h2>어디로 떠나볼까요?</h2></div><button class="text-button" data-screen="map">모험 지도 펼치기 ${icon("arrow-right")}</button></div><div class="world-grid" id="home-worlds"></div><div class="family-note"><span>작은 손에서 시작된 세계</span><p>아이들의 상상으로 태어나, 함께 만들어가는 이야기예요.</p><span class="tiny-spark">✧</span></div></section>
-<section id="map-view" class="view" hidden></section>
+<section id="home-view" class="view home-view"><div class="home-topline"><span class="eyebrow"><span class="live-dot"></span> 나만의 작은 모험이 시작되는 곳</span><span class="season">THE RAINBOW JOURNEY &nbsp; / &nbsp; 01</span></div><div class="home-hero"><div class="hero-copy"><span class="chapter-label">말랑말랑 친구들 : 무지개를 찾아서</span><h1>조그만 친구와,<br>커다란 <span>모험.</span><svg viewBox="0 0 235 18" aria-hidden="true"><path d="M3 12Q115-7 230 11" fill="none" stroke="#e4ab9e" stroke-width="5" stroke-linecap="round"/></svg></h1><p>내 손으로 만든 말랑이와 함께<br>흩어진 무지개 조각을 찾아 떠나요.<br>조금 느려도 괜찮은, 우리만의 여행.</p><div class="hero-actions"><button class="button primary" id="continue-adventure">모험 떠나기 ${icon("arrow-up-right")}</button><button class="button soft" data-screen="workshop">내 친구 만들기 ${icon("palette")}</button></div><div class="home-save-note">${icon("check")} 이 기기에 여행이 자동으로 기록돼요</div></div><div class="hero-art"><div class="art-tag">A LITTLE WORLD OF YOUR OWN</div><canvas id="home-canvas" aria-label="햇살 초원에 모여 있는 말랑이 친구들"></canvas><div class="art-speech">오늘은 어떤 모험을 할까?</div><div class="art-postcard"><span>FROM. 말랑이 마을</span><b>너와 함께라서 반짝이는 날</b><svg viewBox="0 0 45 45"><path d="M5 31Q22 0 40 31M11 31Q22 10 34 31M17 31Q22 20 28 31" stroke="#b39acb" stroke-width="4" fill="none" stroke-linecap="round"/></svg></div><span class="art-coordinate">35° MALLANG · 127° FRIENDSHIP</span></div></div><div class="journey-intro"><div><span class="eyebrow">YOUR NEXT CHAPTER</span><h2>어디로 떠나볼까요?</h2></div><button class="text-button" data-screen="map">모험 지도 펼치기 ${icon("arrow-right")}</button></div><div class="world-grid" id="home-worlds"></div><button class="home-story-invite" data-screen="storybook"><span class="story-invite-symbol">${icon("book-open")}</span><span><small>말랑이와 작은 빛의 씨앗 · 그림 동화 32쪽</small><b>오늘은, 이야기를 읽어 볼까요?</b><span id="home-story-progress">그림 속 작은 놀이와 함께 천천히 읽어요</span></span><span class="story-invite-arrow">${icon("arrow-up-right")}</span></button><div class="family-note"><span>작은 손에서 시작된 세계</span><p>아이들의 상상으로 태어나, 함께 만들어가는 이야기예요.</p><span class="tiny-spark">✧</span></div></section>
+<section id="storybook-view" class="view storybook-view" hidden></section><section id="map-view" class="view" hidden></section>
 <section id="workshop-view" class="view" hidden><div class="page-heading"><div><span class="eyebrow">MADE BY YOU</span><h1>말랑이 작업실</h1><p>세상에 하나뿐인 친구. 오늘의 주인공은 네가 만드는 거야.</p></div><button class="button primary" id="workshop-adventure">이 친구와 모험 ${icon("arrow-right")}</button></div><div class="workshop-root" id="workshop-root"></div></section>
 <section id="collection-view" class="view" hidden></section>
 <section id="game-view" class="view game-view" hidden><div class="game-topline"><button class="text-button" id="game-back">${icon("arrow-left")} 모험 지도</button><span id="game-title"></span><button class="icon-button" id="fullscreen" aria-label="전체 화면">${icon("maximize")}</button></div><div class="game-frame" id="game-frame"><canvas id="game-canvas" aria-label="말랑이 모험 게임. 방향키로 이동하고 스페이스로 점프하세요." tabindex="0"></canvas><div class="game-hud"><div class="hud-name"><span id="game-world"></span><b id="game-hero"></b></div><div class="hud-right"><div class="hud-score">${icon("star")} <b id="game-stars">0</b><span>/ 10</span><span class="berry">🍓 <b id="game-berries">0</b><span>/ 3</span></span></div><button class="icon-button" id="game-pause" aria-label="일시정지">${icon("pause")}</button></div></div><div class="story-overlay" id="story-overlay" hidden></div><div class="mobile-game-deck"><div class="deck-caption"><span>${icon("sparkles")} 한 걸음씩, 우리만의 속도로</span><button class="text-button" id="mobile-game-help" aria-label="모바일 조작 안내">${icon("book-open")} 놀이 방법</button></div></div><div class="touch-controls-new"><div><button data-control="left" aria-label="왼쪽으로 이동">${icon("move-left")}</button><button data-control="right" aria-label="오른쪽으로 이동">${icon("move-right")}</button></div><button data-control="jump" class="jump-control" aria-label="점프">${icon("arrow-up")}<span>점프</span></button></div></div><div class="game-bottom"><span>${icon("heart")} 떨어져도 괜찮아. 가까운 깃발에서 다시 시작해.</span><span><kbd>←</kbd><kbd>→</kbd> 이동 <kbd>Space</kbd> 점프 <kbd>Esc</kbd> 쉬어가기</span></div></section>
-</main><nav class="mobile-nav" aria-label="모바일 주 메뉴"><button data-screen="home" aria-label="우리의 집">${icon("house")}<span>우리집</span><i class="nav-dot"></i></button><button data-screen="map" aria-label="모험 지도">${icon("map")}<span>모험 지도</span><i class="nav-dot"></i></button><button data-screen="workshop" aria-label="말랑이 작업실">${icon("palette")}<span>만들기</span><i class="nav-dot"></i></button><button data-screen="collection" aria-label="친구 수첩">${icon("heart")}<span>친구 수첩</span><i class="nav-dot"></i></button></nav><footer class="app-footer"><span>© 말랑말랑 친구들</span><span>작은 상상들이 모여, 하나의 세계가 돼요. <span class="footer-star">✦</span></span><button class="text-button" id="how-to">놀이 안내 ${icon("book-open")}</button></footer></div><dialog id="dialog" class="modal"></dialog><input type="file" accept="application/json,.json" id="import-file" hidden>`;
+</main><nav class="mobile-nav" aria-label="모바일 주 메뉴"><button data-screen="home" aria-label="우리의 집">${icon("house")}<span>우리집</span><i class="nav-dot"></i></button><button data-screen="map" aria-label="모험 지도">${icon("map")}<span>모험 지도</span><i class="nav-dot"></i></button><button data-screen="workshop" aria-label="말랑이 작업실">${icon("palette")}<span>만들기</span><i class="nav-dot"></i></button><button data-screen="storybook" aria-label="말랑이 이야기">${icon("book-open")}<span>이야기</span><i class="nav-dot"></i></button><button data-screen="collection" aria-label="친구 수첩">${icon("heart")}<span>친구 수첩</span><i class="nav-dot"></i></button></nav><footer class="app-footer"><span>© 말랑말랑 친구들</span><span>작은 상상들이 모여, 하나의 세계가 돼요. <span class="footer-star">✦</span></span><button class="text-button" id="how-to">놀이 안내 ${icon("book-open")}</button></footer></div><dialog id="dialog" class="modal"></dialog><input type="file" accept="application/json,.json" id="import-file" hidden>`;
+const storybook = mountStorybook(el("#storybook-view"));
 function cardArt(world: number) {
   return `<div class="world-art art-${world}" aria-hidden="true"><span class="sun"></span><span class="cloud c1"></span><span class="cloud c2"></span><span class="hill h1"></span><span class="hill h2"></span><span class="island"></span><span class="little-friend f-${world}"><i></i><i></i><b>⌣</b></span><span class="plant p1">${world === 1 ? "🍓" : world === 2 ? "✦" : "✿"}</span><span class="plant p2">${world === 1 ? "✿" : world === 2 ? "✧" : "✿"}</span><span class="mini-star">✧</span></div>`;
 }
@@ -139,6 +141,11 @@ function updateHome() {
   el("#total-stars").textContent = String(totals());
   el("#continue-adventure").innerHTML =
     `${Object.keys(save.records).length ? "이어서 여행하기" : "모험 떠나기"} ${icon("arrow-up-right")}`;
+  el("#home-story-progress").textContent = save.storybook.finished
+    ? "다 읽은 이야기도, 다시 펼치면 새로운 마음이 보여요"
+    : save.storybook.page > 0
+      ? `${save.storybook.page + 1}쪽에 책갈피를 꽂아 두었어요`
+      : "그림 속 작은 놀이와 함께 천천히 읽어요";
   renderIcons();
   drawHome();
 }
@@ -269,6 +276,7 @@ async function show(screen: string) {
     game = undefined;
   }
   if (current === "workshop" && workshop) workshop.setActive(false);
+  storybook.setActive(screen === "storybook");
   current = screen;
   document.body.dataset.screen = screen;
   document
@@ -298,6 +306,10 @@ async function show(screen: string) {
         el("#workshop-root").innerHTML = workshopTemplate;
         workshop = mountWorkshop();
         setupMobileWorkshop();
+        el("#redo-workshop").onclick = () =>
+          toast(
+            workshop.redo() ? "다시 적용했어요." : "다시 적용할 작업이 없어요.",
+          );
         el("#undo-workshop").onclick = () =>
           toast(
             workshop.undo()

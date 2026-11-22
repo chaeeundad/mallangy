@@ -2,11 +2,21 @@ import * as THREE from "three";
 import { COLORS } from "../data";
 import { workshopStorage, save, persist } from "../storage";
 import "./legacy.css";
+import "./studio.css";
+import { attachToSurface } from "./surface";
+import { applyBodyShape } from "./shapes";
+import { normalizeDesign, DEFAULT_DESIGN, DESIGN_PRESETS } from "./design";
 export function mountWorkshop() {
   let active = true,
     frameId = 0,
     lastNormals = 0;
-  const undoStack = [];
+  const undoStack = [],
+    redoStack = [];
+  let selectedSticker = -1,
+    stickerMeshList = [],
+    brushColor = null;
+  const design = () =>
+    state.customization ?? (state.customization = normalizeDesign({}));
   function removeMesh(object) {
     blob.remove(object);
     object.traverse((child) => {
@@ -27,7 +37,6 @@ export function mountWorkshop() {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) releasePointer();
   });
-  const adventure = { mode: false };
   const colors = [
     { name: "딸기", hex: "#ff6f91" },
     { name: "복숭아", hex: "#ff9fb0" },
@@ -60,7 +69,32 @@ export function mountWorkshop() {
     { name: "푸딩", emoji: "🍮" },
   ];
   const expressions = ["😊", "😋", "😴", "🥰"],
-    stickerChoices = ["🌼", "💖", "⭐", "🍓", "🎀", "✨"];
+    stickerChoices = [
+      "🌼",
+      "💖",
+      "⭐",
+      "🍓",
+      "🎀",
+      "✨",
+      "🌙",
+      "🌈",
+      "🍒",
+      "🍋",
+      "🍀",
+      "🌸",
+      "🦋",
+      "🫧",
+      "💎",
+      "🍬",
+      "👑",
+      "🎩",
+      "🕶️",
+      "🎧",
+      "❄️",
+      "☁️",
+      "🪷",
+      "💌",
+    ];
   let state = {
     name: "",
     colorIndex: 0,
@@ -112,8 +146,6 @@ export function mountWorkshop() {
   const raycaster = new THREE.Raycaster(),
     ndc = new THREE.Vector2(),
     clock = new THREE.Clock();
-  function resizeAdventureCanvas() {}
-  function refreshAdventureHeroes() {}
   function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(33, 1, 0.1, 100);
@@ -219,7 +251,9 @@ export function mountWorkshop() {
       pointerDown = false;
       lastPointer = null;
       pressDepthTargets.fill(0);
+      rebuildSurfaceBindings();
     });
+    state.customization = normalizeDesign(state.customization);
     setShape(shapeIndex);
     loadPaint(state.paint || []);
     loadStickers(state.stickers || []);
@@ -236,31 +270,11 @@ export function mountWorkshop() {
     camera.aspect = w / h;
     camera.position.z = w / h < 0.9 ? 8.3 : 7.3;
     camera.updateProjectionMatrix();
-    resizeAdventureCanvas();
   }
   function setShape(index) {
     shapeIndex = index;
     const a = geometry.attributes.position;
-    for (let i = 0; i < a.count; i++) {
-      let x = unitPositions[i * 3],
-        y = unitPositions[i * 3 + 1],
-        z = unitPositions[i * 3 + 2],
-        r = 1;
-      const theta = Math.atan2(z, x),
-        phi = Math.acos(Math.max(-1, Math.min(1, y / 1.34))),
-        yn = y / 1.34;
-      if (index === 1) r = 1 - 0.1 * yn + 0.045 * Math.cos(phi * 2);
-      if (index === 2)
-        r = 1 + 0.18 * Math.cos(theta * 5) * Math.pow(Math.sin(phi), 2);
-      if (index === 3) r = 1 + 0.06 * Math.max(0, yn);
-      if (index === 4) r = 1 - 0.035 * yn;
-      if (index === 5) r = 1 + 0.025 * yn;
-      if (index === 6) r = 1 - 0.1 * yn;
-      if (index === 7) r = 1 + 0.12 * yn;
-      if (index === 8) r = 1 + 0.25 * yn;
-      if (index === 9) r = 1 + 0.1 * yn;
-      a.setXYZ(i, x * r, y * r * (index === 9 ? 0.82 : 1), z * r);
-    }
+    applyBodyShape(geometry, unitPositions, index);
     a.needsUpdate = true;
     geometry.computeVertexNormals();
     basePositions = a.array.slice();
@@ -277,10 +291,11 @@ export function mountWorkshop() {
       blob.add(mesh);
     };
     const earMat = new THREE.MeshPhysicalMaterial({
-      color: colors[baseColorIndex].hex,
+      color: design().bodyColor || colors[baseColorIndex].hex,
       roughness: 0.35,
       clearcoat: 0.4,
     });
+    earMat.userData.bodyTint = true;
     if ([3, 5].includes(index)) {
       const cfg =
         index === 3
@@ -359,7 +374,9 @@ export function mountWorkshop() {
           }
       }
     }
+    geometry.computeBoundingSphere();
     rebuildFaceBindings();
+    if (state.stickers?.length) loadStickers(state.stickers);
     rebuildSurfaceBindings();
     document
       .querySelectorAll(".shape")
@@ -369,67 +386,47 @@ export function mountWorkshop() {
   }
   function rebuildFaceBindings() {
     if (!faceGroup || !basePositions) return;
-    const count = geometry.attributes.position.count;
-    faceBindings = faceGroup.children.map((mesh) => {
-      const rest =
-          mesh.userData.faceRestPosition ||
-          (mesh.userData.faceRestPosition = mesh.position.clone()),
-        nearest = [];
-      for (let i = 0; i < count; i++) {
-        const dx = basePositions[i * 3] - rest.x,
-          dy = basePositions[i * 3 + 1] - rest.y,
-          dz = basePositions[i * 3 + 2] - rest.z,
-          d2 = dx * dx + dy * dy + dz * dz;
-        if (nearest.length < 24) nearest.push({ i, d2 });
-        else {
-          let far = 0;
-          for (let j = 1; j < nearest.length; j++)
-            if (nearest[j].d2 > nearest[far].d2) far = j;
-          if (d2 < nearest[far].d2) nearest[far] = { i, d2 };
-        }
-      }
-      const sum = nearest.reduce((n, v) => n + 1 / (v.d2 + 0.004), 0);
+    const d = design();
+    faceGroup.scale.setScalar(1);
+    faceBindings = faceGroup.children.map((mesh, index) => {
+      const anchor =
+        mesh.userData.faceDesignAnchor ??
+        (mesh.userData.faceDesignAnchor = mesh.position.clone());
+      const x =
+          anchor.x * d.faceScale * (index < 4 ? d.eyeSpacing : 1) + d.faceX,
+        y = anchor.y * d.faceScale + d.faceY;
+      const rx =
+        (mesh === mouth
+          ? 0.18
+          : mesh === duckBeak
+            ? 0.2
+            : index < 4
+              ? 0.075
+              : 0.13) * d.faceScale;
+      const ry = (mesh === mouth ? 0.12 : 0.09) * d.faceScale;
+      const offset =
+        mesh === duckBeak
+          ? 0.13
+          : index < 4
+            ? index % 2
+              ? 0.14
+              : 0.075
+            : mesh === mouth
+              ? 0.075
+              : 0.045;
       return {
         mesh,
-        rest,
-        scale: mesh.scale.clone(),
-        normal: rest.clone().normalize(),
-        nearest: nearest.map((v) => ({ i: v.i, w: 1 / (v.d2 + 0.004) / sum })),
+        x,
+        y,
+        offset,
+        surface: attachToSurface(geometry, x, y, rx, ry),
       };
     });
+    updateFaceDeformation();
   }
   function updateFaceDeformation() {
-    const p = geometry.attributes.position;
-    for (const binding of faceBindings) {
-      let x = 0,
-        y = 0,
-        z = 0;
-      for (const item of binding.nearest) {
-        const i = item.i,
-          k = i * 3,
-          w = item.w;
-        x += (p.array[k] - basePositions[k]) * w;
-        y += (p.array[k + 1] - basePositions[k + 1]) * w;
-        z += (p.array[k + 2] - basePositions[k + 2]) * w;
-      }
-      binding.mesh.position.set(
-        binding.rest.x + x,
-        binding.rest.y + y,
-        binding.rest.z + z,
-      );
-      const squeeze = Math.min(
-        0.48,
-        Math.max(
-          0,
-          -(x * binding.normal.x + y * binding.normal.y + z * binding.normal.z),
-        ),
-      );
-      binding.mesh.scale.set(
-        binding.scale.x * (1 - squeeze * 0.28),
-        binding.scale.y * (1 - squeeze * 0.58),
-        binding.scale.z * (1 - squeeze * 0.2),
-      );
-    }
+    for (const b of faceBindings)
+      b.mesh.position.set(b.x, b.y, b.surface.sample() + b.offset);
   }
   function rebuildSurfaceBindings() {
     if (!blob || !basePositions) return;
@@ -438,6 +435,7 @@ export function mountWorkshop() {
       .filter((mesh) => mesh.userData.deformWithBody)
       .map((mesh) => {
         const rest =
+            (mesh.userData.sticker ? mesh.position.clone() : null) ||
             mesh.userData.surfaceRestPosition ||
             (mesh.userData.surfaceRestPosition = mesh.position.clone()),
           nearest = [];
@@ -470,6 +468,12 @@ export function mountWorkshop() {
   function updateSurfaceDeformation() {
     const p = geometry.attributes.position;
     for (const binding of surfaceBindings) {
+      if (
+        pointerDown &&
+        tool === "move" &&
+        binding.mesh.userData.stickerIndex === selectedSticker
+      )
+        continue;
       let x = 0,
         y = 0,
         z = 0;
@@ -510,11 +514,19 @@ export function mountWorkshop() {
     return raycaster.intersectObject(blob, false)[0];
   }
   function onDown(e) {
-    if (adventure.mode || !active || !e.isPrimary || e.button !== 0) return;
+    if (!active || !e.isPrimary || e.button !== 0) return;
     pointerDown = true;
     stage.setPointerCapture?.(e.pointerId);
     lastPointer = { x: e.clientX, y: e.clientY };
     const hit = hitAt(e);
+    if (tool === "move") {
+      const stickerHit = raycaster.intersectObjects(stickerMeshList, false)[0];
+      selectedSticker = stickerHit
+        ? stickerHit.object.userData.stickerIndex
+        : -1;
+      refreshStickerList();
+      return;
+    }
     if (hit) {
       if (tool === "squish") {
         pressDepthTargets.fill(0);
@@ -527,12 +539,28 @@ export function mountWorkshop() {
     }
   }
   function onMove(e) {
-    if (adventure.mode || !pointerDown) return;
+    if (!active || !pointerDown) return;
     if (tool === "orbit" && lastPointer) {
       blob.rotation.y += (e.clientX - lastPointer.x) * 0.008;
       blob.rotation.x += (e.clientY - lastPointer.y) * 0.006;
     }
     lastPointer = { x: e.clientX, y: e.clientY };
+    if (tool === "move" && selectedSticker >= 0) {
+      const hit = hitAt(e);
+      if (hit) {
+        const pos = blob.worldToLocal(hit.point.clone());
+        Object.assign(state.stickers[selectedSticker], {
+          x: pos.x,
+          y: pos.y,
+          z: pos.z,
+        });
+        placeSticker(
+          stickerMeshList[selectedSticker],
+          state.stickers[selectedSticker],
+        );
+      }
+      return;
+    }
     if (tool === "paint") {
       const hit = hitAt(e);
       if (hit) paint(hit);
@@ -591,6 +619,7 @@ export function mountWorkshop() {
       .querySelector("#malangyi-toggle")
       .setAttribute("aria-pressed", String(!enabled));
     applyPeek();
+    applyFinish();
     updateSlangiSoundButtons();
     document.querySelector("#hint").textContent = enabled
       ? "슬랑이 모드! 말랑이 전체가 말캉한 슬라임처럼 반짝여요 🫧"
@@ -800,82 +829,95 @@ export function mountWorkshop() {
       : "꾹꾹! 부드럽게 눌려요. 놓으면 천천히 돌아와요 ✨";
   }
   function paint(hit, record = true) {
+    if (record && state.paint.length >= 1800) {
+      document.querySelector("#hint").textContent =
+        "색칠이 가득해요. 되돌리거나 붓 자국을 지울 수 있어요.";
+      return;
+    }
     const local = blob.worldToLocal(hit.point.clone()),
-      p = geometry.attributes.position,
+      d = design(),
+      dab = {
+        x: local.x,
+        y: local.y,
+        z: local.z,
+        color: brushColor || d.brushColor,
+        radius: d.brushSize,
+        strength: d.brushStrength,
+      };
+    applyDab(dab);
+    if (record) state.paint.push(dab);
+  }
+  function applyDab(d) {
+    const p = geometry.attributes.position,
       c = paintAttribute,
-      color = new THREE.Color(colors[colorIndex].hex);
+      color = new THREE.Color(d.color),
+      radius = d.radius ?? 0.42,
+      strength = d.strength ?? 0.88;
     for (let i = 0; i < p.count; i++) {
-      const d = Math.hypot(
-        p.getX(i) - local.x,
-        p.getY(i) - local.y,
-        p.getZ(i) - local.z,
+      const distance = Math.hypot(
+        p.getX(i) - d.x,
+        p.getY(i) - d.y,
+        p.getZ(i) - d.z,
       );
-      if (d < 0.42) {
-        const f = (1 - d / 0.42) * 0.88,
-          old = new THREE.Color(c.getX(i), c.getY(i), c.getZ(i));
-        old.lerp(color, f);
+      if (distance < radius) {
+        const old = new THREE.Color(c.getX(i), c.getY(i), c.getZ(i));
+        old.lerp(color, (1 - distance / radius) * strength);
         c.setXYZ(i, old.r, old.g, old.b);
       }
     }
     c.needsUpdate = true;
-    if (state.paint.length >= 1800) {
-      document.querySelector("#hint").textContent =
-        "색칠이 가득해요! 다른 도구로 더 꾸며 봐요.";
-      return;
-    }
-    if (record)
-      state.paint.push({
-        x: local.x,
-        y: local.y,
-        z: local.z,
-        color: colors[colorIndex].hex,
-      });
-    document.querySelector("#hint").textContent =
-      "슥슥 색칠 중! 원하는 곳을 톡톡 칠해요 🎨";
   }
   function loadPaint(dabs) {
-    const base = new THREE.Color(colors[baseColorIndex].hex),
+    const d = design(),
+      base = new THREE.Color(d.bodyColor || colors[baseColorIndex].hex),
+      accent = new THREE.Color(d.patternColor),
       p = geometry.attributes.position,
       c = paintAttribute;
-    for (let i = 0; i < p.count; i++) c.setXYZ(i, base.r, base.g, base.b);
-    if (shapeIndex === 9) {
-      const glaze = new THREE.Color("#a95f35"),
-        shine = new THREE.Color("#d8904e");
-      for (let i = 0; i < p.count; i++) {
-        const y = p.getY(i);
-        if (y > 0.91) {
-          const t = Math.max(0, Math.min(1, (y - 0.91) / 0.3)),
-            tone = glaze.clone().lerp(shine, t * 0.45),
-            old = new THREE.Color(c.getX(i), c.getY(i), c.getZ(i));
-          old.lerp(tone, Math.min(1, t * 1.35));
-          c.setXYZ(i, old.r, old.g, old.b);
-        }
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i),
+        y = p.getY(i),
+        z = p.getZ(i),
+        tone = base.clone();
+      let mix = 0;
+      if (d.pattern === "stripes") mix = Math.sin(y * 16) > 0.3 ? 0.65 : 0;
+      if (d.pattern === "dots") {
+        const u = Math.atan2(z, x) * 4,
+          v = y * 5;
+        mix = Math.hypot(u - Math.round(u), v - Math.round(v)) < 0.2 ? 0.8 : 0;
       }
+      if (d.pattern === "gradient")
+        mix = Math.max(0, Math.min(1, (y + 1.3) / 2.6));
+      tone.lerp(accent, mix);
+      if (shapeIndex === 9 && y > 0.91)
+        tone.lerp(new THREE.Color("#ac754d"), Math.min(1, (y - 0.91) * 5));
+      c.setXYZ(i, tone.r, tone.g, tone.b);
     }
-    for (const d of dabs) {
-      const pos = new THREE.Vector3(d.x, d.y, d.z),
-        color = new THREE.Color(d.color);
-      for (let i = 0; i < p.count; i++) {
-        const dist = Math.hypot(
-          p.getX(i) - pos.x,
-          p.getY(i) - pos.y,
-          p.getZ(i) - pos.z,
-        );
-        if (dist < 0.42) {
-          const f = (1 - dist / 0.42) * 0.88,
-            old = new THREE.Color(c.getX(i), c.getY(i), c.getZ(i));
-          old.lerp(color, f);
-          c.setXYZ(i, old.r, old.g, old.b);
-        }
-      }
-    }
+    for (const dab of dabs) applyDab(dab);
     c.needsUpdate = true;
+    blob.children.forEach((child) => {
+      if (child.material?.userData.bodyTint)
+        child.material.color.set(d.bodyColor || colors[baseColorIndex].hex);
+    });
   }
-  function addSticker(emoji, pos, record = true) {
+  function placeSticker(mesh, item) {
+    const direction = new THREE.Vector3(item.x, item.y, item.z).normalize(),
+      probe = new THREE.Mesh(geometry),
+      ray = new THREE.Raycaster(
+        direction.clone().multiplyScalar(5),
+        direction.clone().negate(),
+      );
+    const hit = ray.intersectObject(probe, false)[0];
+    const position = hit?.point ?? direction.clone().multiplyScalar(1.4),
+      normal = hit?.face?.normal.clone() ?? direction;
+    mesh.position.copy(position).addScaledVector(normal, 0.05);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    mesh.rotateZ(((item.rotation ?? 0) * Math.PI) / 180);
+    mesh.scale.setScalar(item.scale ?? 1);
+  }
+  function addSticker(emoji, pos, record = true, item) {
     if (record && state.stickers.length >= 60) return;
     const canvas = document.createElement("canvas");
-    canvas.width = 128;
-    canvas.height = 128;
+    canvas.width = canvas.height = 128;
     const ctx = canvas.getContext("2d");
     ctx.font = "92px sans-serif";
     ctx.textAlign = "center";
@@ -883,25 +925,59 @@ export function mountWorkshop() {
     ctx.fillText(emoji, 64, 68);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.34, 0.34),
+      new THREE.MeshBasicMaterial({
         map: tex,
         transparent: true,
         depthTest: true,
         depthWrite: false,
+        side: THREE.DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
       }),
     );
-    const normal = pos.clone().normalize();
-    sprite.position.copy(pos).addScaledVector(normal, 0.045);
-    sprite.scale.set(0.31, 0.31, 1);
-    sprite.renderOrder = 2;
-    blob.add(sprite);
-    if (record) state.stickers.push({ emoji, x: pos.x, y: pos.y, z: pos.z });
+    const data = item ?? {
+      emoji,
+      x: pos.x,
+      y: pos.y,
+      z: pos.z,
+      scale: 1,
+      rotation: 0,
+    };
+    if (record) {
+      state.stickers.push(data);
+      selectedSticker = state.stickers.length - 1;
+    }
+    mesh.userData.sticker = true;
+    mesh.userData.deformWithBody = true;
+    mesh.userData.stickerIndex = record
+      ? selectedSticker
+      : stickerMeshList.length;
+    placeSticker(mesh, data);
+    mesh.renderOrder = 2;
+    blob.add(mesh);
+    stickerMeshList.push(mesh);
+    if (record) {
+      rebuildSurfaceBindings();
+      refreshStickerList();
+    }
   }
   function loadStickers(items) {
-    blob.children.filter((o) => o.isSprite).forEach((o) => removeMesh(o));
+    blob.children
+      .filter((o) => o.userData.sticker || o.isSprite)
+      .forEach(removeMesh);
+    stickerMeshList = [];
     for (const item of items)
-      addSticker(item.emoji, new THREE.Vector3(item.x, item.y, item.z), false);
+      addSticker(
+        item.emoji,
+        new THREE.Vector3(item.x, item.y, item.z),
+        false,
+        item,
+      );
+    selectedSticker = Math.min(selectedSticker, items.length - 1);
+    rebuildSurfaceBindings();
+    refreshStickerList();
   }
   function addCrunchBatch() {
     if (state.slangi) {
@@ -990,6 +1066,7 @@ export function mountWorkshop() {
             orbit: "말랑이를 드래그해 돌려 봐요. 얼굴도 함께 따라가요",
             paint: "색을 고른 뒤 말랑이 위를 쓱쓱 문질러요",
             sticker: "스티커를 고르고 말랑이를 톡 눌러 붙여요",
+            move: "장식을 눌러 고른 뒤 끌어 옮겨요. 목록에서도 선택할 수 있어요.",
           };
           document.querySelector("#hint").textContent = hints[tool];
         }),
@@ -1006,26 +1083,36 @@ export function mountWorkshop() {
       (b) =>
         (b.onclick = () => {
           colorIndex = Number(b.dataset.i);
-          if (tool !== "paint") {
-            baseColorIndex = colorIndex;
-            state.baseColorIndex = baseColorIndex;
-            loadPaint(state.paint || []);
-            setShape(shapeIndex);
-          }
+          brushColor = null;
+          design().bodyColor = "";
+          baseColorIndex = colorIndex;
+          state.baseColorIndex = baseColorIndex;
+          loadPaint(state.paint || []);
+          setShape(shapeIndex);
           updateColors();
         }),
     );
   }
   function applyFace() {
     if (!faceGroup) return;
-    eyes.forEach((e) => (e.scale.y = faceIndex === 2 ? 0.38 : 1));
+    const d = design();
+    eyes.forEach((eye) => {
+      eye.scale.set(
+        d.faceScale,
+        (faceIndex === 2 ? 0.38 : 1) * d.faceScale,
+        d.faceScale,
+      );
+      eye.material.color.set(d.eyeColor);
+    });
     mouth.scale.set(
-      faceIndex === 1 ? 1.25 : faceIndex === 2 ? 0.7 : 1,
-      faceIndex === 1 ? 1.3 : faceIndex === 2 ? 0.7 : 1,
-      1,
+      (faceIndex === 1 ? 1.25 : faceIndex === 2 ? 0.7 : 1) * d.faceScale,
+      (faceIndex === 1 ? 1.3 : faceIndex === 2 ? 0.7 : 1) * d.faceScale,
+      d.faceScale,
     );
     mouth.rotation.z = faceIndex === 3 ? Math.PI + 0.22 : Math.PI;
-    faceGroup.scale.setScalar(faceIndex === 2 ? 0.94 : 1);
+    faceGroup.children
+      .slice(4, 6)
+      .forEach((cheek) => (cheek.material.opacity = d.cheekOpacity));
     rebuildFaceBindings();
   }
   function updateFaces() {
@@ -1075,7 +1162,6 @@ export function mountWorkshop() {
       .forEach(
         (b) => (b.onclick = () => loadCreation(list[Number(b.dataset.i)])),
       );
-    refreshAdventureHeroes();
   }
   function escapeHtml(s) {
     return String(s).replace(
@@ -1091,7 +1177,12 @@ export function mountWorkshop() {
     );
   }
   function loadCreation(x) {
-    state = { ...structuredClone(x), slangiSound: x.slangiSound || "putty" };
+    brushColor = null;
+    state = {
+      ...structuredClone(x),
+      customization: normalizeDesign(x.customization),
+      slangiSound: x.slangiSound || "putty",
+    };
     colorIndex = x.colorIndex;
     baseColorIndex = x.baseColorIndex ?? x.colorIndex;
     faceIndex = x.faceIndex;
@@ -1108,6 +1199,7 @@ export function mountWorkshop() {
     updateSlangiSoundButtons();
     updateColors();
     updateFaces();
+    syncStudioControls();
   }
   function animate() {
     frameId = requestAnimationFrame(animate);
@@ -1294,7 +1386,184 @@ export function mountWorkshop() {
   };
 
   init();
+  setupStudioControls();
 
+  function applyFinish() {
+    const m = blob.material,
+      finish = design().finish;
+    m.roughness = finish === "soft" ? 0.8 : finish === "glossy" ? 0.2 : 0.08;
+    m.clearcoat = finish === "soft" ? 0.1 : 1;
+    m.clearcoatRoughness = finish === "soft" ? 0.6 : 0.08;
+  }
+  function refreshStickerList() {
+    const list = document.querySelector("#sticker-layers");
+    if (!list) return;
+    list.innerHTML = state.stickers.length
+      ? state.stickers
+          .map(
+            (item, i) =>
+              `<button data-layer="${i}" aria-pressed="${i === selectedSticker}"><span>${escapeHtml(item.emoji)}</span> 장식 ${i + 1}</button>`,
+          )
+          .join("")
+      : "<p>스티커를 골라 말랑이에 붙여 보세요.</p>";
+    list.querySelectorAll("[data-layer]").forEach(
+      (button) =>
+        (button.onclick = () => {
+          selectedSticker = Number(button.dataset.layer);
+          document.querySelector('[data-tool="move"]').click();
+          refreshStickerList();
+        }),
+    );
+    const item = state.stickers[selectedSticker];
+    for (const [id, key, base] of [
+      ["sticker-size", "scale", 1],
+      ["sticker-rotation", "rotation", 0],
+    ]) {
+      const input = document.querySelector("#" + id);
+      if (input) {
+        input.disabled = !item;
+        input.value = item?.[key] ?? base;
+      }
+    }
+  }
+  function syncStudioControls() {
+    for (const input of document.querySelectorAll("[data-design]"))
+      input.value =
+        input.dataset.design === "bodyColor"
+          ? design().bodyColor || colors[baseColorIndex].hex
+          : design()[input.dataset.design];
+    refreshStickerList();
+    applyFinish();
+    syncControlOutputs();
+  }
+  function setupStudioControls() {
+    const presets = document.querySelector("#design-presets");
+    presets.innerHTML = DESIGN_PRESETS.map(
+      (p, i) =>
+        `<button data-preset="${i}" style="--preset-a:${p.color};--preset-b:${p.patternColor}"><span></span>${p.name}</button>`,
+    ).join("");
+    presets.querySelectorAll("[data-preset]").forEach(
+      (button) =>
+        (button.onclick = () => {
+          const preset = DESIGN_PRESETS[Number(button.dataset.preset)];
+          loadCreation({
+            ...snapshot(),
+            shapeIndex: preset.shape,
+            customization: {
+              ...design(),
+              bodyColor: preset.color,
+              pattern: preset.pattern,
+              patternColor: preset.patternColor,
+              finish: preset.finish,
+            },
+            paint: [],
+          });
+        }),
+    );
+    document.querySelectorAll("[data-design]").forEach((input) =>
+      input.addEventListener("input", () => {
+        const key = input.dataset.design;
+        design()[key] =
+          input.type === "range" ? Number(input.value) : input.value;
+        if (
+          key.startsWith("face") ||
+          key === "eyeSpacing" ||
+          key === "eyeColor" ||
+          key === "cheekOpacity"
+        )
+          applyFace();
+        else if (key === "finish") applyFinish();
+        else loadPaint(state.paint);
+        syncControlOutputs();
+      }),
+    );
+    document.querySelector("#brush-color").oninput = (e) => {
+      brushColor = e.target.value;
+      design().brushColor = brushColor;
+      document.querySelector('[data-tool="paint"]').click();
+    };
+    document.querySelector("#clear-paint").onclick = () => {
+      state.paint = [];
+      loadPaint([]);
+    };
+    document.querySelector("#clear-stickers").onclick = () => {
+      state.stickers = [];
+      selectedSticker = -1;
+      loadStickers([]);
+    };
+    document.querySelector("#delete-sticker").onclick = () => {
+      if (selectedSticker < 0) return;
+      state.stickers.splice(selectedSticker, 1);
+      selectedSticker = -1;
+      loadStickers(state.stickers);
+    };
+    for (const [id, key] of [
+      ["sticker-size", "scale"],
+      ["sticker-rotation", "rotation"],
+    ])
+      document.querySelector("#" + id).oninput = (e) => {
+        if (selectedSticker < 0) return;
+        state.stickers[selectedSticker][key] = Number(e.target.value);
+        placeSticker(
+          stickerMeshList[selectedSticker],
+          state.stickers[selectedSticker],
+        );
+        rebuildSurfaceBindings();
+      };
+    document.querySelector("#reset-face").onclick = () => {
+      Object.assign(design(), {
+        faceX: 0,
+        faceY: 0,
+        faceScale: 1,
+        eyeSpacing: 1,
+        eyeColor: "#49394a",
+        cheekOpacity: 0.52,
+      });
+      applyFace();
+      syncStudioControls();
+    };
+    document.querySelector("#front-view").onclick = () => {
+      blob.rotation.set(0, 0, 0);
+    };
+    document.querySelector("#random-design").onclick = () => {
+      const preset =
+        DESIGN_PRESETS[Math.floor(Math.random() * DESIGN_PRESETS.length)];
+      loadCreation({
+        ...snapshot(),
+        shapeIndex: Math.floor(Math.random() * 10),
+        faceIndex: Math.floor(Math.random() * 4),
+        paint: [],
+        customization: {
+          ...design(),
+          bodyColor: preset.color,
+          pattern: preset.pattern,
+          patternColor: preset.patternColor,
+          finish: preset.finish,
+        },
+      });
+    };
+    document.querySelector("#photo-save").onclick = () => {
+      renderer.render(scene, camera);
+      const a = document.createElement("a");
+      a.href = renderer.domElement.toDataURL("image/png");
+      a.download = (state.name || "나의말랑이").replace(/[\/]/g, "-") + ".png";
+      a.click();
+    };
+    document
+      .querySelector("#reset")
+      .addEventListener("click", syncStudioControls);
+    syncStudioControls();
+  }
+  function syncControlOutputs() {
+    document.querySelectorAll("[data-design]").forEach((input) => {
+      const output = input.parentElement.querySelector("output");
+      if (output)
+        output.value =
+          input.type === "range"
+            ? String(Math.round(Number(input.value) * 100)) + "%"
+            : input.value;
+    });
+  }
   function syncSoundButton() {
     const button = document.querySelector("#sound-toggle");
     button.textContent = soundEnabled ? "🔊 소리 켜짐" : "🔇 소리 꺼짐";
@@ -1312,8 +1581,9 @@ export function mountWorkshop() {
     });
   }
   function checkpoint() {
+    redoStack.length = 0;
     undoStack.push(snapshot());
-    if (undoStack.length > 25) undoStack.shift();
+    if (undoStack.length > 40) undoStack.shift();
   }
   const root = document.querySelector("#workshop-view");
   root.addEventListener(
@@ -1328,7 +1598,7 @@ export function mountWorkshop() {
     (e) => {
       if (
         e.target.closest(
-          ".shape,.color,.face,.sticker,.saved-card,#reset,#add-crunch,#slangi-toggle,#malangyi-toggle,[data-slangi-sound]",
+          ".shape,.color,.face,.sticker,.saved-card,#reset,#add-crunch,#slangi-toggle,#malangyi-toggle,[data-slangi-sound],[data-preset],[data-studio-edit]",
         )
       )
         checkpoint();
@@ -1336,7 +1606,13 @@ export function mountWorkshop() {
     true,
   );
   root.addEventListener("focusin", (e) => {
-    if (e.target.id === "name") checkpoint();
+    if (
+      e.target.id === "name" ||
+      e.target.matches(
+        "[data-design],#sticker-size,#sticker-rotation,#brush-color",
+      )
+    )
+      checkpoint();
   });
   const scheduleSave = () => {
     try {
@@ -1346,11 +1622,13 @@ export function mountWorkshop() {
     }
   };
   root.addEventListener("pointerup", scheduleSave);
+  root.addEventListener("pointercancel", scheduleSave);
   root.addEventListener("click", scheduleSave);
   root.addEventListener("input", scheduleSave);
   stage.addEventListener("pointercancel", () => {
     pointerDown = false;
     pressDepthTargets.fill(0);
+    rebuildSurfaceBindings();
   });
   const fail = () => {
     window.dispatchEvent(new CustomEvent("workshop-error"));
@@ -1369,10 +1647,20 @@ export function mountWorkshop() {
     undo() {
       const previous = undoStack.pop();
       if (previous) {
+        redoStack.push(snapshot());
         loadCreation(previous);
         scheduleSave();
       }
       return !!previous;
+    },
+    redo() {
+      const next = redoStack.pop();
+      if (next) {
+        undoStack.push(snapshot());
+        loadCreation(next);
+        scheduleSave();
+      }
+      return !!next;
     },
     setActive(value) {
       active = value;
