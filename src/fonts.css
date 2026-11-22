@@ -1,0 +1,31 @@
+@font-face {
+  font-family: "Jua";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("@fontsource/jua/files/jua-korean-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("@fontsource/noto-sans-kr/files/noto-sans-kr-korean-400-normal.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("@fontsource/noto-sans-kr/files/noto-sans-kr-korean-500-normal.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "Noto Sans KR";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("@fontsource/noto-sans-kr/files/noto-sans-kr-korean-700-normal.woff2")
+    format("woff2");
+}

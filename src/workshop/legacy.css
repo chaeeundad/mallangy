@@ -1,0 +1,130 @@
+.workshop-root .stage {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+.workshop-root .stage:active {
+  cursor: grabbing;
+}
+.workshop-root .stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.workshop-root .stage-wrap {
+  min-width: 0;
+}
+.workshop-root .scene-label {
+  position: absolute;
+  border-radius: 99px;
+  padding: 9px 13px;
+  pointer-events: none;
+}
+.workshop-root .hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+}
+.workshop-root .sparkle {
+  position: absolute;
+  font-size: 21px;
+  animation: twinkle 2s ease-in-out infinite;
+  pointer-events: none;
+}
+.workshop-root aside {
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.workshop-root .section-title small {
+  font-weight: 400;
+}
+.workshop-root .choices,
+.workshop-root .tool-row,
+.workshop-root .shape-row,
+.workshop-root .sticker-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+.workshop-root .color {
+  border: 0;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: inset 0 -3px #00000010;
+}
+.workshop-root .color.selected {
+  transform: scale(1.08);
+}
+.workshop-root .shape,
+.workshop-root .tool,
+.workshop-root .crunch-kind,
+.workshop-root .face,
+.workshop-root .sticker {
+  border: 1px solid;
+}
+.workshop-root .face {
+  background: white;
+}
+.workshop-root .face.selected {
+  transform: translateY(-2px);
+}
+.workshop-root .fill-count {
+  margin-left: auto;
+  align-self: center;
+}
+.workshop-root .name-input {
+  width: 100%;
+  border: 1px solid;
+  outline: none;
+}
+.workshop-root .action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.workshop-root .action {
+  width: 100%;
+  font-weight: 700;
+}
+.workshop-root .gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.workshop-root .saved-card {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid;
+}
+.workshop-root .saved-card span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workshop-root .note {
+  text-align: center;
+  margin: 17px 0 0;
+  line-height: 1.8;
+}
+.workshop-root .sticker {
+  padding: 0;
+}
+.workshop-root .peek-toggle {
+  border: 0;
+}
+.workshop-root .name-input:focus {
+  border-color: #baa0c6;
+  box-shadow: 0 0 0 3px #baa0c622;
+}
+@keyframes twinkle {
+  50% {
+    transform: scale(0.7) rotate(20deg);
+    opacity: 0.45;
+  }
+}
