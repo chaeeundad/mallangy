@@ -1,0 +1,14 @@
+{
+ "id":"/",
+ "name":"말랑말랑 친구들 · 무지개를 찾아서",
+ "short_name":"말랑이 여행",
+ "description":"내 손으로 만든 말랑이와 떠나는 작은 모험",
+ "lang":"ko",
+ "start_url":"./",
+ "scope":"./",
+ "display":"standalone",
+ "orientation":"any",
+ "background_color":"#f8f6ef",
+ "theme_color":"#f8f6ef",
+ "icons":[{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}

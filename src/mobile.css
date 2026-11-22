@@ -1,0 +1,1554 @@
+.mobile-nav,
+.mobile-workshop-tabs,
+.mobile-quick-tools,
+.mobile-game-deck {
+  display: none;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* Phones get an app shell, a toy editor with a separate tool tray, and a full-screen game. */
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  :root {
+    --mobile-nav-height: 72px;
+    --mobile-header-height: 72px;
+    --mobile-bottom: calc(
+      var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px)
+    );
+    -webkit-tap-highlight-color: transparent;
+  }
+  html {
+    scroll-padding-bottom: var(--mobile-bottom);
+  }
+  body {
+    overscroll-behavior-x: none;
+  }
+  .app-shell {
+    padding: 0 20px;
+    padding-bottom: calc(var(--mobile-bottom) + 12px);
+  }
+  .app-header {
+    height: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    margin: 0;
+    border: 0;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+  .brand > svg {
+    height: 40px;
+    width: 40px;
+  }
+  .brand > span {
+    font-size: 21px;
+  }
+  .brand small {
+    font-size: 8px;
+    margin-top: 4px;
+  }
+  .main-nav {
+    display: none;
+  }
+  .app-header .header-tools {
+    gap: 12px;
+  }
+  .header-tools .icon-button {
+    height: 42px;
+    width: 42px;
+    background: #fffaf3;
+    border-color: #e7dfd1;
+  }
+  .star-wallet {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .star-wallet svg {
+    height: 17px;
+    width: 17px;
+  }
+  .app-footer {
+    display: none;
+  }
+  .app-main {
+    min-height: calc(
+      100dvh - var(--mobile-header-height) - var(--mobile-bottom)
+    );
+  }
+  .mobile-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 12;
+    height: var(--mobile-bottom);
+    padding: 8px max(14px, env(safe-area-inset-right))
+      calc(8px + env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    background: #fffdf6f2;
+    border-top: 1px solid #e5ded0;
+    backdrop-filter: blur(22px);
+    box-shadow: 0 -8px 25px #7d6d4b06;
+  }
+  .mobile-nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    border-radius: 13px;
+    color: #aaa18f;
+    min-height: 52px;
+    font-size: 9px;
+    font-weight: 500;
+    touch-action: manipulation;
+  }
+  .mobile-nav button > svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.6;
+  }
+  .mobile-nav button.active {
+    background: #eee7f0;
+    color: #877193;
+  }
+  .mobile-nav button.active > svg {
+    stroke-width: 2;
+  }
+  .mobile-nav .nav-dot {
+    display: none;
+  }
+  .view {
+    padding-bottom: 16px;
+  }
+  .home-topline {
+    margin-top: 12px;
+  }
+  .home-topline .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.025em;
+    color: #998d77;
+  }
+  .season {
+    display: none;
+  }
+  .home-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 20px 0 23px;
+    align-items: stretch;
+  }
+  .hero-art {
+    order: -1;
+    aspect-ratio: 1.36;
+    border-radius: 45px 15px 15px 15px;
+    max-height: 350px;
+    width: 100%;
+  }
+  .hero-art canvas {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    object-fit: cover;
+  }
+  .art-tag {
+    font-size: 6px;
+    top: 17px;
+    left: 27px;
+  }
+  .art-coordinate {
+    font-size: 5px;
+    bottom: 12px;
+    right: 13px;
+  }
+  .art-speech {
+    left: 47%;
+    top: 32%;
+    font-size: 8px;
+    padding: 8px 10px;
+  }
+  .art-postcard {
+    left: 17px;
+    bottom: 26px;
+    padding: 9px 48px 9px 12px;
+  }
+  .art-postcard > span {
+    font-size: 5px;
+  }
+  .art-postcard > b {
+    font-size: 8px;
+    margin-top: 5px;
+  }
+  .art-postcard > svg {
+    width: 31px;
+    height: 31px;
+    right: 8px;
+    top: 5px;
+  }
+  .hero-copy {
+    position: relative;
+    padding: 25px 5px 0;
+  }
+  .chapter-label {
+    font-size: 9px;
+    letter-spacing: 0.02em;
+    color: #a18d77;
+  }
+  .hero-copy h1 {
+    font-size: 36px;
+    line-height: 1.32;
+    margin: 13px 0 18px;
+    max-width: 310px;
+    letter-spacing: -0.055em;
+  }
+  .hero-copy h1 > svg {
+    width: 125px;
+    left: 90px;
+    bottom: -4px;
+  }
+  .hero-copy > p {
+    font-size: 11px;
+    line-height: 1.9;
+    color: #a29480;
+  }
+  .hero-copy > p br:first-of-type {
+    display: none;
+  }
+  .hero-copy > p br:last-of-type {
+    display: none;
+  }
+  .hero-copy > p {
+    max-width: 310px;
+    word-break: keep-all;
+  }
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 9px;
+    margin-top: 22px;
+  }
+  .hero-actions .button {
+    padding: 15px 13px;
+    min-height: 49px;
+    font-size: 11px;
+    gap: 12px;
+    border-radius: 13px;
+  }
+  .hero-actions .button svg {
+    width: 17px;
+    height: 17px;
+  }
+  .home-save-note {
+    font-size: 8px;
+    margin-top: 13px;
+    color: #b0a38e;
+  }
+  .home-save-note svg {
+    width: 11px;
+  }
+  .journey-intro {
+    margin: 10px 0 16px;
+  }
+  .journey-intro h2 {
+    font-size: 22px;
+    margin-top: 7px;
+  }
+  .journey-intro .eyebrow {
+    font-size: 7px;
+  }
+  .journey-intro .text-button {
+    font-size: 9px;
+    gap: 5px;
+    min-height: 44px;
+  }
+  .world-grid {
+    display: flex;
+    gap: 13px;
+    overflow-x: auto;
+    margin: 0 -20px;
+    padding: 0 20px 12px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 20px;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .world-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .world-grid .world-card {
+    display: block;
+    width: 76vw;
+    max-width: 350px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    border-radius: 16px;
+  }
+  .world-grid .world-art {
+    height: 145px;
+  }
+  .world-grid .world-card-info {
+    padding: 18px 19px;
+  }
+  .world-card h3 {
+    font-size: 20px;
+  }
+  .world-card p {
+    font-size: 10px;
+  }
+  .world-number {
+    font-size: 8px;
+  }
+  .round-arrow {
+    width: 33px;
+    height: 33px;
+  }
+  .round-arrow svg {
+    width: 15px;
+    height: 15px;
+  }
+  .world-art .sun {
+    right: 23%;
+    top: 19px;
+    width: 32px;
+    height: 32px;
+  }
+  .world-art .island {
+    left: 20%;
+    width: 60%;
+  }
+  .world-art .little-friend {
+    transform: scale(0.95);
+    bottom: 29px;
+  }
+  .world-art .plant.p1 {
+    left: 24%;
+  }
+  .world-art .plant.p2 {
+    right: 23%;
+  }
+  .world-art .cloud.c1 {
+    left: 9%;
+    top: 32px;
+    transform: scale(0.8);
+  }
+  .world-art .cloud.c2 {
+    right: 7%;
+    top: 47px;
+    transform: scale(0.65);
+  }
+  .world-art .mini-star {
+    top: 32px;
+    left: 40%;
+    font-size: 21px;
+  }
+  .family-note {
+    margin-top: 17px;
+    gap: 5px;
+    padding: 18px 2px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .family-note > span:first-child {
+    font-size: 10px;
+  }
+  .family-note p {
+    font-size: 9px;
+    max-width: 85%;
+  }
+  .tiny-spark {
+    top: 20px;
+  }
+  .page-heading {
+    padding: 23px 3px 24px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 17px;
+  }
+  .page-heading .eyebrow {
+    font-size: 8px;
+  }
+  .page-heading h1 {
+    font-size: 29px;
+    margin: 10px 0;
+  }
+  .page-heading p {
+    font-size: 10px;
+    max-width: 320px;
+    word-break: keep-all;
+  }
+  .page-heading > .button {
+    font-size: 10px;
+    padding: 12px 15px;
+    align-self: flex-end;
+    min-height: 43px;
+  }
+  .progress-pill {
+    font-size: 10px;
+    padding: 10px 13px;
+  }
+  .world-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    gap: 7px;
+    padding: 7px 0 15px;
+    margin: 0;
+    background: #f8f6eff5;
+    backdrop-filter: blur(10px);
+  }
+  .world-tabs button {
+    padding: 14px 10px;
+    min-height: 47px;
+    flex: 1;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 10px;
+    gap: 7px;
+    white-space: nowrap;
+  }
+  .world-tabs button > span {
+    font-size: 8px;
+  }
+  .world-tabs button > svg {
+    display: none;
+  }
+  .map-panel {
+    display: block;
+    border-radius: 18px;
+  }
+  .map-illustration {
+    display: flex;
+    flex-direction: row-reverse;
+    min-height: 190px;
+    align-items: center;
+  }
+  .map-illustration > .world-art {
+    width: 46%;
+    height: 190px;
+    flex-shrink: 0;
+  }
+  .map-illustration > div:last-child {
+    padding: 23px 0 23px 24px;
+  }
+  .map-illustration h2 {
+    font-size: 28px;
+    white-space: nowrap;
+  }
+  .map-illustration .eyebrow {
+    font-size: 8px;
+  }
+  .map-illustration p {
+    font-size: 10px;
+  }
+  .map-friend {
+    font-size: 8px;
+    margin-top: 20px;
+    white-space: nowrap;
+  }
+  .stage-list {
+    position: relative;
+    padding: 20px 15px;
+    gap: 14px;
+  }
+  .stage-list:before {
+    content: "";
+    position: absolute;
+    left: 44px;
+    top: 44px;
+    bottom: 44px;
+    border-left: 2px dotted #dfd6c6;
+  }
+  .stage-card {
+    position: relative;
+    padding: 21px 13px;
+    gap: 13px;
+    min-height: 95px;
+    border-radius: 14px;
+  }
+  .stage-number {
+    height: 34px;
+    width: 34px;
+  }
+  .stage-description b {
+    font-size: 14px;
+  }
+  .stage-description > span {
+    font-size: 9px;
+    line-height: 1.6;
+  }
+  .stage-description small {
+    font-size: 7px;
+  }
+  .stage-right {
+    font-size: 9px;
+    gap: 5px;
+  }
+  .stage-right .rating {
+    display: none;
+  }
+  .stage-right > svg {
+    width: 15px;
+  }
+  .stage-card.locked {
+    opacity: 0.55;
+  }
+  .map-note {
+    font-size: 9px;
+    line-height: 1.9;
+    align-items: flex-start;
+    margin: 18px 3px;
+  }
+  .map-note svg {
+    width: 15px;
+    margin-top: 3px;
+  }
+  .collection-summary {
+    padding: 23px 12px;
+    border-radius: 17px;
+  }
+  .collection-summary b {
+    font-size: 29px;
+  }
+  .collection-summary small {
+    font-size: 11px;
+  }
+  .collection-summary span {
+    font-size: 9px;
+  }
+  .badge-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .badge-card {
+    padding: 23px 10px;
+    border-radius: 16px;
+  }
+  .badge-card b {
+    font-size: 12px;
+  }
+  .badge-card p {
+    font-size: 9px;
+  }
+  .badge-card small {
+    font-size: 8px;
+  }
+  .friend-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .friend-card {
+    border-radius: 16px;
+  }
+  .friend-card canvas {
+    height: 145px;
+  }
+  .friend-card h3 {
+    font-size: 16px;
+  }
+  .friend-card p {
+    font-size: 9px;
+  }
+  .friend-card .text-button {
+    min-height: 44px;
+    font-size: 10px;
+  }
+  .friend-card .icon-button.small {
+    width: 36px;
+    height: 36px;
+  }
+  .friend-card .icon-button.small svg {
+    width: 14px;
+  }
+  .section-heading {
+    font-size: 20px;
+  }
+  .section-heading-row .text-button {
+    font-size: 9px;
+    min-height: 44px;
+  }
+  .modal {
+    position: fixed;
+    inset: auto 0 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 600px;
+    border-radius: 25px 25px 0 0;
+    padding: 37px 27px calc(26px + env(safe-area-inset-bottom));
+    max-height: 88dvh;
+    border-bottom: 0;
+    overscroll-behavior: contain;
+    box-shadow: 0 -20px 70px #51406526;
+  }
+  .modal:before {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 34px;
+    height: 4px;
+    background: #dfd4c4;
+    top: 12px;
+    left: calc(50% - 17px);
+    border-radius: 3px;
+  }
+  .modal-close {
+    width: 42px;
+    height: 42px;
+    top: 20px;
+    right: 19px;
+    border: 0;
+    background: #f3eee4;
+  }
+  .modal h2 {
+    font-size: 24px;
+    padding-right: 24px;
+  }
+  .modal .eyebrow {
+    font-size: 8px;
+  }
+  .modal > p {
+    font-size: 12px;
+  }
+  .modal .setting-row {
+    padding: 22px 0;
+    min-height: 65px;
+  }
+  .modal input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+  .modal-actions .button {
+    min-height: 48px;
+    border-radius: 12px;
+  }
+  .modal > .button.full {
+    min-height: 50px;
+    border-radius: 12px;
+  }
+  .guide-step p {
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  .guide-step b {
+    font-size: 13px;
+  }
+  .setting-row > span {
+    font-size: 13px;
+  }
+  /* Mobile studio: the friend never scrolls away while choosing a material. */
+  body[data-screen="workshop"] {
+    overflow: hidden;
+  }
+  body[data-screen="workshop"] #workshop-view {
+    position: fixed;
+    top: calc(var(--mobile-header-height) + env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    bottom: var(--mobile-bottom);
+    padding: 0 13px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  #workshop-view .page-heading {
+    height: 59px;
+    min-height: 59px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 7px 12px;
+    gap: 10px;
+  }
+  #workshop-view .page-heading .eyebrow,
+  #workshop-view .page-heading p {
+    display: none;
+  }
+  #workshop-view .page-heading h1 {
+    font-size: 20px;
+    letter-spacing: -0.045em;
+    margin: 0;
+  }
+  #workshop-view .page-heading > .button {
+    align-self: auto;
+    padding: 10px 13px;
+    min-height: 38px;
+    gap: 7px;
+    font-size: 10px;
+    border-radius: 11px;
+  }
+  #workshop-view .page-heading > .button svg {
+    height: 14px;
+    width: 14px;
+  }
+  body[data-screen="workshop"] .workshop-root {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(190px, 44%) minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+    gap: 7px;
+    padding: 0;
+  }
+  body[data-screen="workshop"] .workshop-root .stage-wrap {
+    position: relative;
+    top: auto;
+    min-height: 0;
+    height: 100%;
+  }
+  body[data-screen="workshop"] .workshop-root .stage {
+    height: calc(100% - 29px);
+    min-height: 0;
+    max-height: none;
+    position: relative;
+    border-radius: 35px 14px 14px 14px;
+    top: auto;
+  }
+  body[data-screen="workshop"] .workshop-root .scene-label {
+    font-size: 6px;
+    left: 16px;
+    top: 15px;
+    padding: 7px 10px;
+  }
+  body[data-screen="workshop"] .workshop-root .hint {
+    font-size: 8px;
+    line-height: 1.6;
+    bottom: 12px;
+    padding: 0 15px;
+    text-align: left;
+    max-width: calc(100% - 75px);
+    color: #a18d7e;
+  }
+  body[data-screen="workshop"] .workshop-root .stage-caption {
+    height: 29px;
+    padding: 0 7px;
+    align-items: center;
+  }
+  .stage-caption > span {
+    font-size: 8px;
+  }
+  .stage-caption .text-button {
+    height: 29px;
+    font-size: 10px;
+    padding: 0 2px;
+  }
+  .mobile-quick-tools {
+    position: absolute;
+    right: 10px;
+    top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px;
+    background: #fffcf2c9;
+    border: 1px solid #ffffffbd;
+    border-radius: 15px;
+    backdrop-filter: blur(12px);
+  }
+  .mobile-quick-tools button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 44px;
+    min-height: 43px;
+    border-radius: 10px;
+    font-size: 20px;
+    color: #9b8c7c;
+    touch-action: manipulation;
+  }
+  .mobile-quick-tools button > span {
+    font-size: 7px;
+  }
+  .mobile-quick-tools button[aria-pressed="true"] {
+    background: #e9e1ec;
+    color: #8b7199;
+  }
+  body[data-screen="workshop"] .workshop-root aside {
+    padding: 0;
+    max-height: none;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 20px 20px 0 0;
+    border: 1px solid #e5ddcc;
+    border-bottom: 0;
+    background: #fffdf6;
+    scrollbar-width: none;
+    box-shadow: 0 -3px 15px #77664c05;
+  }
+  .mobile-workshop-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 9px 9px 8px;
+    background: #fffdf6f5;
+    border-bottom: 1px solid #eee5d8;
+    backdrop-filter: blur(12px);
+    gap: 5px;
+  }
+  .mobile-workshop-tabs button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 10px;
+    min-height: 42px;
+    border-radius: 12px;
+    color: #aaa08c;
+    touch-action: manipulation;
+  }
+  .mobile-workshop-tabs button > span {
+    font-size: 19px;
+    line-height: 1;
+  }
+  .mobile-workshop-tabs button[aria-selected="true"] {
+    background: #ede5ee;
+    color: #8c7199;
+  }
+  .workshop-root #workshop-panel {
+    padding: 18px 19px 25px;
+  }
+  .workshop-root #workshop-panel > h2,
+  .workshop-root #workshop-panel > .intro {
+    display: none;
+  }
+  .workshop-root[data-mobile-panel="shape"]
+    .mobile-panel:not([data-panel="shape"]),
+  .workshop-root[data-mobile-panel="decorate"]
+    .mobile-panel:not([data-panel="decorate"]),
+  .workshop-root[data-mobile-panel="material"]
+    .mobile-panel:not([data-panel="material"]),
+  .workshop-root[data-mobile-panel="save"]
+    .mobile-panel:not([data-panel="save"]) {
+    display: none;
+  }
+  .workshop-root .mobile-panel > .section-title:first-child {
+    margin-top: 0;
+  }
+  .workshop-root .section-title {
+    font-size: 10px;
+    margin-top: 18px;
+    color: #9b8870;
+  }
+  .workshop-root .section-title small {
+    font-size: 8px;
+    line-height: 1.7;
+    margin-top: 5px;
+  }
+  .workshop-root .shape-row {
+    gap: 7px;
+  }
+  .workshop-root .shape {
+    font-size: 11px;
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+  .workshop-root .tool {
+    font-size: 10px;
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+  .workshop-root .crunch-kind {
+    font-size: 10px;
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+  .workshop-root .peek-toggle {
+    min-height: 42px;
+    font-size: 10px;
+    border-radius: 11px;
+  }
+  .workshop-root .choices {
+    gap: 11px;
+    padding: 4px 0;
+  }
+  .workshop-root .color {
+    width: 36px;
+    height: 36px;
+    border: 4px solid #fffdf6;
+    outline-offset: -3px;
+    box-shadow: 0 0 0 1px #ebe3d5;
+  }
+  .workshop-root .color.selected {
+    outline: 2px solid #9f80b2;
+    box-shadow: none;
+    transform: none;
+  }
+  .workshop-root .face {
+    height: 44px;
+    width: 46px;
+    font-size: 22px;
+    border-radius: 12px;
+  }
+  .workshop-root .sticker {
+    width: 44px;
+    height: 44px;
+    font-size: 23px;
+    border-radius: 12px;
+  }
+  .workshop-root .sticker-row {
+    gap: 8px;
+  }
+  .workshop-root .name-input {
+    font-size: 16px;
+    min-height: 49px;
+    border-radius: 12px;
+  }
+  .workshop-root .action-row {
+    gap: 9px;
+  }
+  .workshop-root .action {
+    min-height: 48px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+  .workshop-root .secondary {
+    min-height: 48px;
+    font-size: 11px;
+    border-radius: 12px;
+  }
+  .workshop-root .saved-card {
+    min-height: 47px;
+    font-size: 10px;
+    border-radius: 11px;
+  }
+  .workshop-root .note {
+    display: block;
+    font-size: 8px;
+    line-height: 1.8;
+    margin-top: 16px;
+  }
+  /* Mobile adventure: the browser page becomes a game surface with a thumb deck. */
+  body[data-screen="game"] {
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: #ebe4f0;
+  }
+  body[data-screen="game"] .app-header,
+  body[data-screen="game"] .mobile-nav,
+  body[data-screen="game"] .app-footer {
+    display: none;
+  }
+  body[data-screen="game"] .app-shell {
+    padding: 0;
+  }
+  body[data-screen="game"] .app-main {
+    min-height: 0;
+  }
+  body[data-screen="game"] #game-view {
+    position: fixed;
+    inset: 0;
+    padding: 0;
+    margin: 0;
+    z-index: 15;
+    background: #e7ebde;
+  }
+  body[data-screen="game"] .game-topline,
+  body[data-screen="game"] .game-bottom {
+    display: none;
+  }
+  body[data-screen="game"] .game-frame {
+    --mobile-deck: clamp(185px, 28dvh, 270px);
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+    isolation: isolate;
+  }
+  body[data-screen="game"] #game-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: calc(100% - var(--mobile-deck));
+    border-radius: 0 0 25px 25px;
+    touch-action: none;
+  }
+  body[data-screen="game"] .game-hud {
+    inset: calc(16px + env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right)) auto
+      max(16px, env(safe-area-inset-left));
+    align-items: flex-start;
+    gap: 7px;
+    z-index: 2;
+  }
+  body[data-screen="game"] .hud-name {
+    padding: 10px 12px;
+    border-radius: 13px;
+    max-width: 145px;
+  }
+  .hud-name > span {
+    font-size: 8px;
+    line-height: 1.7;
+  }
+  .hud-name > b {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .hud-right {
+    gap: 7px;
+  }
+  .hud-score {
+    padding: 12px 11px;
+    gap: 4px;
+    font-size: 12px;
+    border-radius: 18px;
+  }
+  .hud-score > svg {
+    width: 15px;
+    height: 15px;
+  }
+  .hud-score .berry {
+    font-size: 11px;
+    padding-left: 7px;
+    margin-left: 4px;
+    gap: 4px;
+  }
+  .hud-score > span {
+    font-size: 8px;
+  }
+  .berry span {
+    font-size: 8px;
+  }
+  .hud-right .icon-button {
+    width: 43px;
+    height: 43px;
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+  }
+  .hud-right .icon-button svg {
+    height: 19px;
+    width: 19px;
+  }
+  .mobile-game-deck {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--mobile-deck);
+    background: linear-gradient(170deg, #eee8f1, #e8e4ee);
+    border-top: 1px solid #fff8;
+    z-index: -1;
+  }
+  .deck-caption {
+    position: absolute;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #a191ab;
+    font-size: 8px;
+  }
+  .deck-caption > span {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .deck-caption > span svg {
+    width: 12px;
+    height: 12px;
+  }
+  .deck-caption .text-button {
+    font-size: 8px;
+    color: #a191ab;
+    min-height: 35px;
+    gap: 5px;
+  }
+  .deck-caption .text-button svg {
+    width: 12px;
+  }
+  body[data-screen="game"] .touch-controls-new {
+    inset: auto max(29px, env(safe-area-inset-right))
+      calc(var(--mobile-deck) / 2 - 21px + env(safe-area-inset-bottom) / 2)
+      max(25px, env(safe-area-inset-left));
+    opacity: 1;
+    align-items: center;
+    z-index: 2;
+  }
+  body[data-screen="game"] .touch-controls-new > div {
+    gap: 13px;
+  }
+  .touch-controls-new button {
+    height: 70px;
+    width: 70px;
+    border-radius: 24px;
+    background: #fffdf4;
+    border: 1px solid #fefbf5;
+    box-shadow:
+      0 6px 0 #c7bed1,
+      0 10px 18px #7c668e15;
+    color: #8e789e;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  .touch-controls-new button > svg {
+    width: 25px;
+    height: 25px;
+  }
+  .touch-controls-new button:active {
+    background: #ded2e6;
+    box-shadow: 0 2px 0 #bbacc9;
+    transform: translateY(4px);
+  }
+  .touch-controls-new .jump-control {
+    width: 87px;
+    height: 87px;
+    border-radius: 50%;
+    background: #ddc5df;
+    color: #82698e;
+    gap: 4px;
+    transform: none;
+    box-shadow:
+      0 6px 0 #b6a0c4,
+      0 10px 18px #7c668e19;
+  }
+  .jump-control span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .touch-controls-new .jump-control:active {
+    transform: translateY(4px);
+    background: #d5b5da;
+    box-shadow: 0 2px 0 #b6a0c4;
+  }
+  body[data-screen="game"] .story-overlay {
+    padding: max(20px, env(safe-area-inset-top))
+      max(18px, env(safe-area-inset-right)) calc(var(--mobile-deck) + 8px)
+      max(18px, env(safe-area-inset-left));
+    align-items: center;
+    background: #4d405f20;
+    z-index: 5;
+  }
+  .story-card {
+    padding: 23px 20px;
+    gap: 14px;
+    border-radius: 22px;
+    flex-direction: column;
+    max-height: 100%;
+    overflow: auto;
+    margin: 0;
+  }
+  .story-avatar {
+    height: 46px;
+    width: 46px;
+    font-size: 27px;
+    border-radius: 14px;
+  }
+  .story-content {
+    width: 100%;
+  }
+  .story-content > .eyebrow {
+    font-size: 10px;
+  }
+  .story-content > p {
+    font-size: 14px;
+    line-height: 1.95;
+    min-height: 78px;
+    margin: 12px 0 22px;
+  }
+  .story-actions {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .story-actions .button {
+    min-height: 45px;
+    font-size: 10px;
+    padding: 13px 15px;
+    border-radius: 12px;
+  }
+  .story-actions .text-button {
+    min-height: 44px;
+    font-size: 8px;
+  }
+  .story-actions > span {
+    font-size: 9px;
+    margin-right: auto;
+  }
+  .result-card {
+    padding: 27px 20px;
+    border-radius: 24px;
+    max-height: 100%;
+    overflow: auto;
+  }
+  .result-card h2 {
+    font-size: 23px;
+    line-height: 1.5;
+  }
+  .result-card p {
+    font-size: 10px;
+  }
+  .result-card .eyebrow {
+    font-size: 7px;
+  }
+  .result-card .modal-actions .button {
+    font-size: 10px;
+    min-height: 47px;
+  }
+  .result-card > .text-button {
+    min-height: 43px;
+  }
+  .result-rainbow {
+    font-size: 35px;
+  }
+  .result-stats {
+    font-size: 12px;
+    gap: 24px;
+  }
+  #toast {
+    bottom: calc(var(--mobile-bottom) + 17px);
+    font-size: 11px;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    line-height: 1.8;
+    padding: 13px 20px;
+    border-radius: 14px;
+  }
+  body[data-screen="game"] #toast {
+    bottom: calc(env(safe-area-inset-bottom) + 28px);
+    z-index: 30;
+  }
+}
+@media (max-width: 360px) {
+  .app-shell {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .brand > span {
+    font-size: 18px;
+  }
+  .brand > svg {
+    width: 35px;
+  }
+  .header-tools {
+    gap: 8px !important;
+  }
+  .header-tools .icon-button {
+    width: 36px;
+    height: 36px;
+  }
+  .hero-copy h1 {
+    font-size: 33px;
+  }
+  .hero-copy h1 > svg {
+    left: 83px;
+    width: 116px;
+  }
+  .world-tabs button {
+    font-size: 9px;
+    padding-left: 8px;
+    padding-right: 8px;
+    gap: 5px;
+  }
+  .world-tabs button > span {
+    font-size: 7px;
+  }
+  .mobile-quick-tools {
+    padding: 3px;
+    right: 7px;
+  }
+  .mobile-quick-tools button {
+    min-width: 41px;
+    min-height: 40px;
+  }
+  .mobile-workshop-tabs button {
+    gap: 5px;
+    font-size: 9px;
+  }
+  .touch-controls-new button {
+    width: 61px;
+    height: 65px;
+  }
+  .touch-controls-new .jump-control {
+    width: 77px;
+    height: 77px;
+  }
+  body[data-screen="game"] .touch-controls-new {
+    left: 20px;
+    right: 23px;
+  }
+  .hud-score .berry {
+    display: none;
+  }
+  .hud-name > span {
+    font-size: 7px;
+  }
+  .hud-name > b {
+    font-size: 11px;
+  }
+  .story-card {
+    padding: 19px 16px;
+  }
+  .story-content > p {
+    font-size: 12px;
+    min-height: 50px;
+  }
+  .story-actions {
+    gap: 7px;
+  }
+  .story-actions .button {
+    font-size: 9px;
+    padding: 12px;
+  }
+  .story-actions .text-button {
+    font-size: 7px;
+  }
+}
+@media (orientation: landscape) and (max-height: 600px) and (pointer: coarse),
+  (orientation: landscape) and (max-height: 500px) {
+  body[data-screen="game"] .game-frame {
+    --mobile-deck: 0px;
+  }
+  body[data-screen="game"] #game-canvas {
+    height: 100%;
+    border-radius: 0;
+  }
+  body[data-screen="game"] .mobile-game-deck {
+    display: none;
+  }
+  body[data-screen="game"] .touch-controls-new {
+    bottom: max(20px, env(safe-area-inset-bottom));
+    left: max(27px, env(safe-area-inset-left));
+    right: max(30px, env(safe-area-inset-right));
+    align-items: flex-end;
+  }
+  .touch-controls-new button {
+    width: 59px;
+    height: 57px;
+    border-radius: 20px;
+    background: #fffdf2c9;
+    box-shadow: 0 4px 0 #c7bed1a6;
+    backdrop-filter: blur(8px);
+  }
+  .touch-controls-new .jump-control {
+    width: 69px;
+    height: 69px;
+    background: #ddc5dfcc;
+    box-shadow: 0 4px 0 #b6a0c4ba;
+  }
+  .jump-control span {
+    font-size: 8px;
+  }
+  body[data-screen="game"] .game-hud {
+    inset: 12px max(20px, env(safe-area-inset-right)) auto
+      max(20px, env(safe-area-inset-left));
+  }
+  .hud-name {
+    padding: 8px 12px;
+  }
+  .hud-name > span {
+    font-size: 7px;
+  }
+  .hud-name > b {
+    font-size: 10px;
+  }
+  .hud-score {
+    padding: 9px 12px;
+  }
+  .hud-right .icon-button {
+    width: 36px;
+    height: 36px;
+  }
+  body[data-screen="game"] .story-overlay {
+    padding: 16px max(80px, env(safe-area-inset-right)) 16px
+      max(80px, env(safe-area-inset-left));
+    align-items: center;
+  }
+  .story-card {
+    padding: 19px 22px;
+    max-width: 620px;
+    flex-direction: row;
+    gap: 18px;
+  }
+  .story-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 23px;
+    flex-shrink: 0;
+  }
+  .story-content > p {
+    font-size: 12px;
+    min-height: 34px;
+    margin: 10px 0 12px;
+  }
+  .story-actions .button {
+    min-height: 38px;
+    padding: 9px 12px;
+  }
+  .story-actions .text-button {
+    min-height: 38px;
+  }
+  .result-card {
+    padding: 18px;
+    max-width: 430px;
+  }
+  .result-rainbow {
+    display: none;
+  }
+  .result-card h2 {
+    font-size: 20px;
+    margin-top: 10px;
+  }
+  .result-card > .rating svg {
+    width: 22px;
+    height: 22px;
+  }
+  .result-card p {
+    margin-bottom: 8px;
+  }
+  .result-card .modal-actions {
+    margin-top: 12px;
+  }
+  .result-card > .text-button {
+    margin: 0;
+    min-height: 35px;
+  }
+  .result-card .modal-actions .button {
+    min-height: 40px;
+  }
+  body[data-screen="workshop"] #workshop-view {
+    top: 0;
+    left: 0;
+    right: 90px;
+    bottom: 0;
+    padding: 12px 15px;
+  }
+  body[data-screen="workshop"] .app-header {
+    display: none;
+  }
+  body[data-screen="workshop"] .mobile-nav {
+    left: auto;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 90px;
+    height: 100dvh;
+    padding: 15px 7px;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, 1fr);
+    border-top: 0;
+    border-left: 1px solid #e5ded0;
+  }
+  #workshop-view .page-heading {
+    height: 44px;
+    min-height: 44px;
+    padding-bottom: 10px;
+  }
+  #workshop-view .page-heading h1 {
+    font-size: 18px;
+  }
+  #workshop-view .page-heading > .button {
+    min-height: 33px;
+    padding: 8px 12px;
+  }
+  body[data-screen="workshop"] .workshop-root {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 12px;
+  }
+  body[data-screen="workshop"] .workshop-root .stage {
+    border-radius: 25px 12px 12px 12px;
+  }
+  .workshop-root #workshop-panel {
+    padding: 15px;
+  }
+  .mobile-workshop-tabs {
+    padding: 7px 5px;
+    gap: 2px;
+  }
+  .mobile-workshop-tabs button {
+    font-size: 8px;
+    gap: 4px;
+    min-height: 36px;
+  }
+  .mobile-workshop-tabs button > span {
+    font-size: 15px;
+  }
+  .workshop-root .shape {
+    font-size: 9px;
+    padding: 8px;
+    min-height: 36px;
+  }
+  .mobile-quick-tools button {
+    min-height: 37px;
+    min-width: 38px;
+    font-size: 16px;
+  }
+  .mobile-quick-tools button > span {
+    font-size: 6px;
+  }
+  .mobile-quick-tools {
+    top: 9px;
+    right: 7px;
+    gap: 2px;
+    padding: 3px;
+  }
+  .workshop-root .section-title {
+    font-size: 9px;
+  }
+  .workshop-root .section-title small {
+    font-size: 7px;
+  }
+  .workshop-root .tool,
+  .workshop-root .crunch-kind,
+  .workshop-root .peek-toggle {
+    font-size: 9px;
+    min-height: 37px;
+    padding: 8px;
+  }
+  .workshop-root .color {
+    width: 33px;
+    height: 33px;
+  }
+  .workshop-root .choices {
+    gap: 7px;
+  }
+}
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  body.mobile-keyboard .mobile-nav {
+    display: none;
+  }
+  body.mobile-keyboard[data-screen="workshop"] #workshop-view {
+    bottom: var(--keyboard-offset, 0px);
+  }
+  body.mobile-keyboard[data-screen="workshop"] .workshop-root {
+    grid-template-rows: minmax(95px, 25%) minmax(0, 1fr);
+  }
+  body.mobile-keyboard .mobile-quick-tools,
+  body.mobile-keyboard .workshop-root .hint {
+    display: none;
+  }
+  body.mobile-keyboard .workshop-root .stage-caption > span {
+    display: none;
+  }
+  body.mobile-keyboard .workshop-root .stage-caption {
+    justify-content: flex-end;
+  }
+}
