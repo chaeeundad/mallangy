@@ -3,3 +3,8 @@ node_modules/
 dist/
 test-results/
 playwright-report/
+
+# Cloudflare account-specific local deployment configuration
+backend/wrangler.jsonc
+backend/.wrangler/
+.env.local
