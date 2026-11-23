@@ -63,6 +63,10 @@
     {
       "source": "/api/rooms/:id/sync",
       "destination": "/api/mallang-ar?type=room&id=:id"
+    },
+    {
+      "source": "/api/rooms/:id/reset",
+      "destination": "/api/mallang-ar?type=reset&id=:id"
     }
   ]
 }

@@ -3,7 +3,10 @@
  * Never forwards browser cookies, URLs supplied by the client, or camera data.
  */
 export async function bridge(request, options = {}) {
-  const endpoint = options.endpoint ?? process.env.MALLANG_AR_BACKEND_URL;
+  const endpoint =
+    options.endpoint ??
+    (process.env.MALLANG_AR_BACKEND_URL ||
+      "https://mallangy-ar.mino-4ad.workers.dev");
   const fetcher = options.fetcher ?? fetch;
   const json = (code, error) =>
     Response.json(
@@ -22,8 +25,11 @@ export async function bridge(request, options = {}) {
   let path;
   if (type === "marker" && /^\d{1,3}$/.test(id) && +id <= 249)
     path = "/api/markers/" + id + "/enter";
-  else if (type === "room" && /^[23456789A-HJ-NP-Z]{6}$/.test(id))
-    path = "/api/rooms/" + id + "/sync";
+  else if (
+    (type === "room" || type === "reset") &&
+    /^[23456789A-HJ-NP-Z]{6}$/.test(id)
+  )
+    path = "/api/rooms/" + id + (type === "reset" ? "/reset" : "/sync");
   else return json(404, "not_found");
 
   const origin = request.headers.get("origin");

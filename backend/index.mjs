@@ -5,7 +5,7 @@ const CODE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const TTL = 2 * 60 * 60 * 1000;
 const STALE = 12_000;
 const MARKER_ROUTE = /^\/api\/markers\/(0|[1-9][0-9]{0,2})\/enter\/?$/i;
-const SYNC_ROUTE = /^\/api\/rooms\/([23456789A-HJ-NP-Z]{6})\/sync\/?$/i;
+const ROOM_ROUTE = /^\/api\/rooms\/([23456789A-HJ-NP-Z]{6})\/(sync|reset)\/?$/i;
 const CODE_PATTERN = /^[23456789A-HJ-NP-Z]{6}$/i;
 const TOKEN_PATTERN = /^[a-f0-9]{48}$/;
 const ZONE_PATTERN = /^[a-zA-Z0-9_-]{22,64}$/;
@@ -30,10 +30,11 @@ const stmt = (db, sql, ...params) => db.prepare(sql).bind(...params);
 const zoneRoom =
   "SELECT code FROM ar_rooms WHERE zone_hash = ? AND marker_id = ? AND expires_at > ?";
 
-function snapshot(code, id, players, stars) {
+function snapshot(code, id, round, players, stars) {
   return {
     code,
     playerId: id,
+    round,
     players: players.results.map(({ avatar, ...p }) => ({
       ...p,
       active: p.active === 1,
@@ -141,7 +142,13 @@ async function enter(db, zone, marker, body, now, respond) {
         marker,
         now,
       ),
-      stmt(db, zoneRoom, zone, marker, now),
+      stmt(
+        db,
+        "SELECT round FROM ar_rooms WHERE code = (" + zoneRoom + ")",
+        zone,
+        marker,
+        now,
+      ),
       stmt(
         db,
         `DELETE FROM ar_rooms WHERE code IN (SELECT code FROM ar_rooms
@@ -153,68 +160,28 @@ async function enter(db, zone, marker, body, now, respond) {
     if (!member.results.length) return respond({ error: "room_full" }, 409);
     const joined = member.results[0];
     return respond({
-      ...snapshot(joined.code, joined.id, players, stars),
+      ...snapshot(
+        joined.code,
+        joined.id,
+        room.results[0].round,
+        players,
+        stars,
+      ),
       token: joined.id === newId ? newToken : priorToken,
     });
   }
   return respond({ error: "could_not_create_room" }, 503);
 }
 
-async function sync(
-  db,
-  zone,
-  code,
-  { token, x, z, active, jump },
-  now,
-  respond,
-) {
-  if (typeof token !== "string" || !TOKEN_PATTERN.test(token))
-    return respond({ error: "invalid_token" }, 401);
-  if (
-    typeof active !== "boolean" ||
-    !Number.isFinite(x) ||
-    !Number.isFinite(z) ||
-    Math.abs(x) > WORLD_LIMIT ||
-    Math.abs(z) > WORLD_LIMIT
-  )
-    return respond({ error: "invalid_pose" }, 400);
-  if (jump !== undefined && (!Number.isSafeInteger(jump) || jump < 0))
-    return respond({ error: "invalid_jump" }, 400);
-  const tokenHash = await hash("seat:" + token);
-  const auth = `FROM ar_players p JOIN ar_rooms r ON r.code = p.room_code
+const auth = `FROM ar_players p JOIN ar_rooms r ON r.code = p.room_code
     WHERE p.room_code = ? AND p.token_hash = ? AND r.zone_hash = ? AND r.expires_at > ?`;
-  const authArgs = [code, tokenHash, zone, now];
-  const claims = active
-    ? STARS.filter((s) => Math.hypot(s.x - x, s.z - z) <= COLLECT_RADIUS)
-    : [];
-  const results = await db.batch([
-    stmt(db, `SELECT p.id ${auth}`, ...authArgs),
-    stmt(
-      db,
-      `UPDATE ar_players SET x = ?, z = ?, active = ?, seen_at = ?, jump = COALESCE(?, jump)
-      WHERE room_code = ? AND token_hash = ? AND EXISTS (
-        SELECT 1 FROM ar_rooms WHERE code = ? AND zone_hash = ? AND expires_at > ?)`,
-      x,
-      z,
-      active ? 1 : 0,
-      now,
-      jump ?? null,
-      code,
-      tokenHash,
-      code,
-      zone,
-      now,
-    ),
-    ...claims.map((s) =>
-      stmt(
-        db,
-        `INSERT OR IGNORE INTO ar_claims (room_code, star_id)
-      SELECT ?, ? WHERE EXISTS (SELECT 1 ${auth})`,
-        code,
-        s.id,
-        ...authArgs,
-      ),
-    ),
+const currentMember = `SELECT p.id, r.round ${auth}`;
+const roundAuth = `${auth} AND r.round = ?`;
+const isRound = (v) => Number.isSafeInteger(v) && v >= 0;
+const isToken = (v) => typeof v === "string" && TOKEN_PATTERN.test(v);
+
+function readState(db, code, now, authArgs) {
+  return [
     stmt(
       db,
       `SELECT id, seat, x, z, active, avatar, jump FROM ar_players
@@ -231,10 +198,101 @@ async function sync(
       code,
       ...authArgs,
     ),
+  ];
+}
+
+async function sync(
+  db,
+  zone,
+  code,
+  { token, x, z, active, jump, round = 0 },
+  now,
+  respond,
+) {
+  if (!isToken(token)) return respond({ error: "invalid_token" }, 401);
+  if (!isRound(round)) return respond({ error: "invalid_round" }, 400);
+  if (
+    typeof active !== "boolean" ||
+    !Number.isFinite(x) ||
+    !Number.isFinite(z) ||
+    Math.abs(x) > WORLD_LIMIT ||
+    Math.abs(z) > WORLD_LIMIT
+  )
+    return respond({ error: "invalid_pose" }, 400);
+  if (jump !== undefined && (!Number.isSafeInteger(jump) || jump < 0))
+    return respond({ error: "invalid_jump" }, 400);
+  const tokenHash = await hash("seat:" + token);
+  const authArgs = [code, tokenHash, zone, now];
+  const claims = active
+    ? STARS.filter((s) => Math.hypot(s.x - x, s.z - z) <= COLLECT_RADIUS)
+    : [];
+  // Round checking must be in the writes, not only in a preceding read: reset and
+  // sync can arrive in either order, including on different Worker instances.
+  const results = await db.batch([
+    stmt(db, currentMember, ...authArgs),
+    stmt(
+      db,
+      `UPDATE ar_players SET x = ?, z = ?, active = ?, seen_at = ?, jump = COALESCE(?, jump)
+      WHERE room_code = ? AND token_hash = ? AND EXISTS (SELECT 1 ${roundAuth})`,
+      x,
+      z,
+      active ? 1 : 0,
+      now,
+      jump ?? null,
+      code,
+      tokenHash,
+      ...authArgs,
+      round,
+    ),
+    ...claims.map((s) =>
+      stmt(
+        db,
+        `INSERT OR IGNORE INTO ar_claims (room_code, star_id)
+        SELECT ?, ? WHERE EXISTS (SELECT 1 ${roundAuth})`,
+        code,
+        s.id,
+        ...authArgs,
+        round,
+      ),
+    ),
+    ...readState(db, code, now, authArgs),
   ]);
   const member = results[0].results[0];
   if (!member) return respond({ error: "room_or_player_not_found" }, 404);
-  return respond(snapshot(code, member.id, results.at(-2), results.at(-1)));
+  return respond(
+    snapshot(code, member.id, member.round, results.at(-2), results.at(-1)),
+  );
+}
+
+const starIds = STARS.map(({ id }) => id);
+const complete = `(SELECT COUNT(*) FROM ar_claims c WHERE c.room_code = ar_rooms.code
+  AND c.star_id IN (${starIds.map(() => "?").join(", ")})) = ?`;
+
+async function reset(db, zone, code, { token, round }, now, respond) {
+  if (!isToken(token)) return respond({ error: "invalid_token" }, 401);
+  if (!isRound(round)) return respond({ error: "invalid_round" }, 400);
+  const tokenHash = await hash("seat:" + token);
+  const authArgs = [code, tokenHash, zone, now];
+  const [before, , after, players, stars] = await db.batch([
+    stmt(db, currentMember, ...authArgs),
+    stmt(
+      db,
+      `UPDATE ar_rooms SET round = round + 1
+      WHERE code = ? AND EXISTS (SELECT 1 ${roundAuth}) AND ${complete}`,
+      code,
+      ...authArgs,
+      round,
+      ...starIds,
+      starIds.length,
+    ),
+    stmt(db, currentMember, ...authArgs),
+    ...readState(db, code, now, authArgs),
+  ]);
+  const member = after.results[0];
+  if (!member) return respond({ error: "room_or_player_not_found" }, 404);
+  if (before.results[0]?.round === round && member.round === round)
+    return respond({ error: "round_not_complete" }, 409);
+  return respond(snapshot(code, member.id, member.round, players, stars));
 }
 
 async function readBody(request) {
@@ -280,7 +338,7 @@ export async function handleAR(request, env) {
     Response.json(body, { status, headers });
   const path = new URL(request.url).pathname;
   const marker = MARKER_ROUTE.exec(path);
-  const room = SYNC_ROUTE.exec(path);
+  const room = ROOM_ROUTE.exec(path);
   if ((!marker || Number(marker[1]) > 249) && !room)
     return respond({ error: "not_found" }, 404);
   if (!allowed) return respond({ error: "origin_not_allowed" }, 403);
@@ -317,7 +375,8 @@ export async function handleAR(request, env) {
         now,
         respond,
       );
-    return await sync(
+    const action = room[2].toLowerCase() === "reset" ? reset : sync;
+    return await action(
       env.DB,
       zone,
       room[1].toUpperCase(),

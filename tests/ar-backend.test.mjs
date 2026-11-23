@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { handleAR } from "../backend/index.mjs";
@@ -14,12 +14,12 @@ function fixture(t) {
   const sql = new DatabaseSync(":memory:");
   t.after(() => sql.close());
   sql.exec("PRAGMA foreign_keys = ON");
-  sql.exec(
-    readFileSync(
-      new URL("../backend/migrations/0001_ar.sql", import.meta.url),
-      "utf8",
-    ),
-  );
+  const migrations = new URL("../backend/migrations/", import.meta.url);
+  for (const file of readdirSync(migrations)
+    .filter((file) => file.endsWith(".sql"))
+    .sort()) {
+    sql.exec(readFileSync(new URL(file, migrations), "utf8"));
+  }
   const env = {
     ALLOWED_ORIGIN: ORIGIN,
     DB: {
@@ -290,4 +290,98 @@ test("two clients observe latest jump counters; old clients do not reset them", 
     playerJump(await call(entry, { code: a.code, token: a.token }), a.playerId),
     7,
   );
+});
+
+test("completed rounds replay atomically for two seats without old poses reclaiming stars", async (t) => {
+  const { call, sql } = fixture(t);
+  const entry = "/api/markers/42/enter";
+  const a = (await call(entry, { avatar: { shapeIndex: 8 } })).body;
+  const b = (await call(entry, { avatar: { shapeIndex: 4 } })).body;
+  const sync = `/api/rooms/${a.code}/sync`;
+  const replay = `/api/rooms/${a.code}/reset`;
+  assert.equal(a.round, 0);
+  assert.equal(b.round, 0);
+  assert.deepEqual(
+    await call(replay, { token: a.token, round: 0 }).then(
+      ({ status, body }) => [status, body.error],
+    ),
+    [409, "round_not_complete"],
+  );
+  assert.equal((await call(replay, { token: a.token })).status, 400);
+  assert.equal((await call(replay, { token: a.token, round: -1 })).status, 400);
+  assert.equal(
+    (await call(replay, { token: a.token, round: 1.5 })).status,
+    400,
+  );
+  assert.equal(
+    (await call(replay, { token: a.token, round: 0 }, { zone: URL_ZONE }))
+      .status,
+    404,
+  );
+  const pose = (player, star, round, jump = 7) => ({
+    token: player.token,
+    x: star.x,
+    z: star.z,
+    active: true,
+    round,
+    jump,
+  });
+  for (const [index, star] of STARS.entries()) {
+    const response = await call(sync, pose(index % 2 ? a : b, star, 0));
+    assert.equal(response.status, 200);
+    assert.equal(response.body.round, 0);
+    assert.equal(response.body.stars.length, index + 1);
+  }
+  const [one, two, delayed] = await Promise.all([
+    call(replay, { token: a.token, round: 0 }),
+    call(replay, { token: b.token, round: 0 }),
+    call(sync, pose(a, STARS[0], 0)),
+  ]);
+  assert.deepEqual([one.status, two.status, delayed.status], [200, 200, 200]);
+  for (const result of [one, two]) {
+    assert.equal(result.body.round, 1);
+    assert.deepEqual(result.body.stars, []);
+    assert.deepEqual(
+      result.body.players.map(({ seat, x, z, jump, avatar }) => [
+        seat,
+        x,
+        z,
+        jump,
+        avatar.shapeIndex,
+      ]),
+      [
+        [0, -0.75, 0, 0, 8],
+        [1, -0.25, 0, 0, 4],
+      ],
+    );
+  }
+
+  for (const request of [
+    pose(a, STARS[0], 0),
+    pose(b, STARS[1], undefined),
+    pose(b, STARS[1], 999),
+  ]) {
+    const stale = await call(sync, request);
+    assert.equal(stale.body.round, 1);
+    assert.deepEqual(stale.body.stars, []);
+    assert.deepEqual(stale.body.players, one.body.players);
+  }
+  assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM ar_claims").get().n, 0);
+  assert.equal(
+    (await call(entry, { code: b.code, token: b.token })).body.round,
+    1,
+  );
+
+  for (const [index, star] of STARS.entries()) {
+    const response = await call(sync, pose(index % 2 ? a : b, star, 1));
+    assert.equal(response.body.round, 1);
+    assert.equal(response.body.stars.length, index + 1);
+  }
+  const lateRepeat = await call(replay, { token: b.token, round: 0 });
+  assert.equal(lateRepeat.body.round, 1);
+  assert.equal(lateRepeat.body.stars.length, STARS.length);
+  const resetAgain = await call(replay, { token: a.token, round: 1 });
+  assert.equal(resetAgain.body.round, 2);
+  assert.deepEqual(resetAgain.body.stars, []);
+  assert.equal(sql.prepare("SELECT round FROM ar_rooms").get().round, 2);
 });

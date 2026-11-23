@@ -53,6 +53,11 @@ function jumpHeight(time: number, startedAt: number) {
     : 0;
 }
 updateAudioButton();
+const replay = $<HTMLButtonElement>("replay"),
+  hudReplay = $<HTMLButtonElement>("ar-replay"),
+  replayStatus = $("replay-status");
+let resetting = false,
+  mySeatIndex = 0;
 const scan = document.createElement("canvas");
 const scanCtx = scan.getContext("2d", { willReadFrequently: true })!;
 const { AR } = window as unknown as {
@@ -96,6 +101,7 @@ type Room = {
   playerId: string;
   players: Player[];
   stars: string[];
+  round: number;
 };
 type Mode = "solo" | "multi";
 type Actor = {
@@ -396,12 +402,14 @@ function scanFrame(t: number) {
 function applyStars(ids: string[], audible = false) {
   const gained = ids.some((id) => !found.has(id));
   found = new Set(ids);
+  hudReplay.hidden = found.size !== stars.length;
   if (gained && audible)
     chime(found.size === stars.length ? "finish" : "star", soundOn);
   count.textContent = "별 " + found.size + " / " + stars.length;
   for (const d of stars) if (found.has(d.id)) d.mesh.visible = false;
   if (found.size === stars.length && !won) {
     won = true;
+    replayStatus.textContent = "";
     if (typeof win.showModal === "function" && !win.open) win.showModal();
     else status("별빛을 모두 찾았어요!");
   }
@@ -615,6 +623,8 @@ function saveSeat(old: Room, id: number) {
 }
 function leaveRoom() {
   roomRevision++;
+  resetting = false;
+  replay.disabled = false;
   entering = false;
   inFlight = false;
   const old = room;
@@ -623,7 +633,7 @@ function leaveRoom() {
     if (markerId !== null) saveSeat(old, markerId);
     void call(
       "/api/rooms/" + old.code + "/sync",
-      { token: old.token, x, z, active: false },
+      { token: old.token, x, z, active: false, round: old.round },
       { keepalive: true },
     ).catch(() => {});
   }
@@ -657,15 +667,20 @@ async function enterMarker(id: number, n: number) {
     if (sequence !== n || markerId !== id || roomRevision !== ri || !started) {
       void call(
         "/api/rooms/" + result.code + "/sync",
-        { token: result.token, x: 0, z: 0, active: false },
+        { token: result.token, x: 0, z: 0, active: false, round: result.round },
         { keepalive: true },
         zone,
       ).catch(() => {});
       return;
     }
-    room = { ...result, players: preparePlayers(result.players) } as Room;
+    room = {
+      ...result,
+      round: result.round ?? 0,
+      players: preparePlayers(result.players),
+    } as Room;
     const my = room.players.find((p) => p.id === room?.playerId);
     jumpSeq = my?.jump ?? 0;
+    mySeatIndex = my?.seat ?? 0;
     jumpedAt = -Infinity;
     x = my?.x ?? 0;
     z = my?.z ?? 0;
@@ -684,10 +699,69 @@ async function enterMarker(id: number, n: number) {
       entering = false;
   }
 }
+function restartRound(next: Room | null) {
+  if (win.open) win.close();
+  won = false;
+  resetting = false;
+  replay.disabled = false;
+  replayStatus.textContent = "";
+  const me = next?.players.find((p) => p.id === next.playerId);
+  x = me?.x ?? (next ? -0.75 + mySeatIndex * 0.5 : 0);
+  z = me?.z ?? 0;
+  destination.set(x, z);
+  jumpSeq = me?.jump ?? 0;
+  jumpedAt = -Infinity;
+  forgetActors();
+  applyStars(next?.stars ?? []);
+  renderRoom();
+}
+async function replayRound() {
+  if (!won || resetting || !started) return;
+  if (mode === "solo") {
+    restartRound(null);
+    chime("tap", soundOn);
+    return;
+  }
+  if (!room) return;
+  resetting = true;
+  replay.disabled = true;
+  replayStatus.textContent = "";
+  const n = sequence,
+    ri = roomRevision;
+  try {
+    const { code, token, round } = room;
+    const result = await call("/api/rooms/" + code + "/reset", {
+      token,
+      round,
+    });
+    if (sequence !== n || roomRevision !== ri || !room) return;
+    if (result.round > room.round) {
+      room = {
+        ...room,
+        players: preparePlayers(result.players),
+        stars: result.stars,
+        round: result.round,
+      };
+      restartRound(room);
+      chime("tap", soundOn);
+    }
+  } catch {
+    if (sequence === n && roomRevision === ri) {
+      replayStatus.textContent =
+        "다시 시작하지 못했어요. 잠시 후 다시 눌러 주세요.";
+      status(replayStatus.textContent);
+    }
+  } finally {
+    if (sequence === n && roomRevision === ri) {
+      resetting = false;
+      replay.disabled = false;
+    }
+  }
+}
 async function sync(n: number) {
-  if (!room || inFlight || n !== sequence || !started) return;
+  if (!room || inFlight || resetting || n !== sequence || !started) return;
   inFlight = true;
-  const { code, token } = room;
+  const { code, token, round } = room;
   const ri = roomRevision;
   try {
     const result = await call("/api/rooms/" + code + "/sync", {
@@ -696,14 +770,23 @@ async function sync(n: number) {
       z,
       active: tracked,
       jump: jumpSeq,
+      round,
     });
     if (n !== sequence || !room || ri !== roomRevision) return;
+    const nextRound = result.round ?? 0;
+    if (nextRound < room.round) return;
+    const advanced = nextRound > room.round;
     room = {
       ...room,
+      round: nextRound,
       players: preparePlayers(result.players),
       stars: result.stars,
     };
     synced = true;
+    if (advanced) {
+      restartRound(room);
+      return;
+    }
     const activeIds = new Set(room.players.map((p) => p.id));
     for (const [id, a] of actors) {
       if (id !== room.playerId && !activeIds.has(id)) {
@@ -919,6 +1002,12 @@ $("stop").addEventListener("click", () => {
   updateFamilyUI();
 });
 $("stay").addEventListener("click", () => win.close());
+replay.addEventListener("click", () => void replayRound());
+hudReplay.addEventListener("click", () => {
+  if (!won || win.open) return;
+  if (typeof win.showModal === "function") win.showModal();
+  else void replayRound();
+});
 viewport.addEventListener("pointerdown", moveAt);
 viewport.addEventListener("pointermove", (e) => {
   if (e.buttons === 1) moveAt(e);

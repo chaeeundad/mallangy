@@ -68,3 +68,22 @@ test("proxy fails closed with no family link, invalid path, missing backend or o
     413,
   );
 });
+test("replay bridge preserves the authenticated round request and never caches it", async () => {
+  const result = await bridge(
+    req("type=reset&id=ABC234", '{"token":"test-token","round":1}'),
+    {
+      endpoint: "https://worker.test",
+      async fetcher(url, options) {
+        assert.equal(url.href, "https://worker.test/api/rooms/ABC234/reset");
+        assert.deepEqual(JSON.parse(new TextDecoder().decode(options.body)), {
+          token: "test-token",
+          round: 1,
+        });
+        return Response.json({ round: 2, stars: [] });
+      },
+    },
+  );
+  assert.equal(result.status, 200);
+  assert.equal(result.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await result.json(), { round: 2, stars: [] });
+});
