@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>말랑이 소환 카드</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: #272442;
+        background: #eff9ee;
+        font:
+          16px/1.6 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 550px;
+        margin: auto;
+        padding: 24px;
+      }
+      h1 {
+        font-size: clamp(30px, 8vw, 44px);
+        line-height: 1.05;
+        margin: 12px 0;
+      }
+      p {
+        margin: 8px 0 18px;
+      }
+      figure {
+        background: #fff;
+        margin: 0;
+        text-align: center;
+        padding: 16px 16px 12px;
+        border: 1px solid #c8dbcb;
+        border-radius: 22px;
+      }
+      img {
+        display: block;
+        width: min(100%, 135mm);
+        aspect-ratio: 1;
+        margin: auto;
+      }
+      figcaption {
+        color: #55506b;
+        font-weight: 700;
+      }
+      button,
+      a {
+        font: inherit;
+        font-weight: 800;
+        color: #fff;
+        background: #503c9f;
+        display: inline-block;
+        padding: 10px 15px;
+        text-decoration: none;
+        border: 0;
+        border-radius: 14px;
+        cursor: pointer;
+        margin: 15px 8px 0 0;
+      }
+      .sub {
+        font-size: 14px;
+        color: #423956;
+        margin-top: 14px;
+      }
+      @page {
+        size: A4;
+        margin: 15mm;
+      }
+      @media print {
+        body {
+          background: #fff;
+          color: #000;
+        }
+        main {
+          padding: 0;
+          max-width: none;
+        }
+        figure {
+          border: none;
+        }
+        figure img {
+          width: 135mm;
+        }
+        button,
+        a,
+        .sub {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>말랑이 소환 카드</h1>
+      <p>이 카드 한 장을 평평한 바닥이나 탁자에 놓고 다 같이 비춰요.</p>
+      <figure>
+        <div aria-hidden="true">↑ 카드 위쪽</div>
+        <img id="marker" src="./marker.svg" alt="말랑이를 부르는 흑백 마커" />
+        <figcaption id="caption">말랑말랑 친구들 · 카드 042</figcaption>
+      </figure>
+      <div class="sub">
+        카드 번호는 그림을 고를 때만 써요. 같은 가족 링크로 시작하고 같은 카드를
+        비추면 만나요.<br /><label for="number">카드 번호</label>
+        <input
+          id="number"
+          type="number"
+          inputmode="numeric"
+          min="0"
+          max="249"
+          value="42"
+        />
+      </div>
+      <button id="print" type="button">인쇄하기</button
+      ><a id="save" href="./marker.svg" download="mallangy-marker-042.svg"
+        >마커 저장</a
+      >
+      <p class="sub">
+        흰 여백을 남겨 흑백으로 인쇄해요. 프린터가 없다면 다른 화면에 이 카드를
+        띄워 비춰도 돼요.
+      </p>
+    </main>
+    <script src="./aruco-tracker.js" defer></script>
+    <script src="./print.js" defer></script>
+  </body>
+</html>

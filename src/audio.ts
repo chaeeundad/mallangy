@@ -1,10 +1,13 @@
 import { save } from "./storage";
 let ctx: AudioContext | undefined;
-export function chime(kind: "jump" | "star" | "berry" | "finish" | "tap") {
-  if (!save.settings.sound) return;
+export function chime(
+  kind: "jump" | "star" | "berry" | "finish" | "tap",
+  enabled = save.settings.sound,
+) {
+  if (!enabled) return;
   try {
     ctx ??= new AudioContext();
-    if (ctx.state === "suspended") void ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
     const notes =
       kind === "finish"
         ? [523, 659, 784, 1047]
